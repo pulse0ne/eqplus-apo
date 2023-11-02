@@ -16,12 +16,28 @@
       "shell": {
         "all": false,
         "open": true
+      },
+      "fs": {
+        "all": false,
+        "readFile": true,
+        "writeFile": true,
+        "exists": true,
+        "createDir": true,
+        "scope": ["$APPDATA", "$APPDATA/*"]
+      },
+      "dialog": {
+        "all": false,
+        "ask": false,
+        "confirm": false,
+        "message": true,
+        "open": true,
+        "save": false
       }
     },
     "bundle": {
       "active": true,
       "targets": "all",
-      "identifier": "com.tauri.dev",
+      "identifier": "com.snedigart.eqplus-apo",
       "icon": [
         "icons/32x32.png",
         "icons/128x128.png",
@@ -35,11 +51,15 @@
     },
     "windows": [
       {
+        "center": true,
+        "label": "splash",
         "fullscreen": false,
-        "resizable": true,
-        "title": "eqplus-apo-tauri",
-        "width": 800,
-        "height": 600
+        "resizable": false,
+        "decorations": false,
+        "width": 400,
+        "height": 300,
+        "visible": true,
+        "url": "splash.html"
       }
     ]
   }

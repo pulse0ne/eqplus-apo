@@ -42,7 +42,7 @@ const CanvasWrapper = styled.canvas`
 
 type Point2D = { x: number, y: number };
 
-type CanvasPlotProps = {
+export type CanvasPlotProps = {
   width: number,
   height: number,
   activeNodeIndex: number|null,

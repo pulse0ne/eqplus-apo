@@ -1,20 +1,23 @@
-import { createRef, useEffect, useState } from "react";
-import { DefaultTheme, ThemeProvider } from "styled-components";
-import { CanvasPlot } from "./components/CanvasPlot";
-import { IFilter, DisplayFilterNode } from "./types/filter";
-import GlobalStyles from "./GlobalStyles";
-import { DEFAULT_THEMES } from "./defaults";
+import { createRef, useCallback, useEffect, useState } from 'react';
+import { DefaultTheme, ThemeProvider } from 'styled-components';
+import GlobalStyles from './GlobalStyles';
+import { CanvasPlot, CanvasPlotProps } from './components/CanvasPlot';
+import { DEFAULT_THEMES } from './defaults';
+import { DisplayFilterNode, FilterChanges, FilterParams } from './types/filter';
+import { invoke } from '@tauri-apps/api';
+import { EQState } from './types/eqstate';
+import isDefined from './utils/isDefined';
+import throttle from './utils/throttle';
 
-const filters: IFilter[] = [
-  DisplayFilterNode.fromFilterParams({ frequency: 10, gain: 10, q: 0.2, type: 'peaking', id: '1' }),
-  DisplayFilterNode.fromFilterParams({ frequency: 250, gain: -10, q: 0.5, type: 'peaking', id: '2' }),
-  DisplayFilterNode.fromFilterParams({ frequency: 2500, gain: 5, q: 1.2, type: 'peaking', id: '3' }),
-  DisplayFilterNode.fromFilterParams({ frequency: 10000, gain: -5, q: 2.2, type: 'peaking', id: '4' })
-];
+const THROTTLE_TIMEOUT = 100;
 
 type Dimension = { w: number, h: number };
 
-function TestContainer() {
+const sendThrottledModifyFilter: (filter: FilterParams) => void = throttle((filter: FilterParams) => {
+  invoke('modify_filter', { filter });
+}, THROTTLE_TIMEOUT);
+
+function ResponsiveCanvasWrapper(props: Omit<CanvasPlotProps, 'width'|'height'|'disabled'>) {
   const [ size, setSize ] = useState<Dimension>({ w: 400, h: 400 });
   const responsiveWrapper = createRef<HTMLDivElement>();
 
@@ -40,9 +43,8 @@ function TestContainer() {
       <CanvasPlot
         width={size.w}
         height={size.h}
-        filters={filters}
-        activeNodeIndex={0}
         disabled={false}
+        {...props}
       />
     </div>
   );
@@ -50,9 +52,37 @@ function TestContainer() {
 
 function App() {
   const [ theme ] = useState<DefaultTheme>(DEFAULT_THEMES[0]);
+  const [ filters, setFilters ] = useState<FilterParams[]>([]);
+  const [ selected, setSelected ] = useState<number|null>(null);
+
+  useEffect(() => {
+    invoke('get_state')
+      .then(res => {
+        const state = res as EQState;
+        console.log(state);
+        setFilters(state.filters);
+      });
+  }, []);
+
+  const handleFilterChanged = useCallback(({ frequency, gain, q, type }: FilterChanges) => {
+    if (selected === null) return;
+    const filter = filters[selected];
+    if (isDefined(frequency)) filter.frequency = frequency;
+    if (isDefined(gain)) filter.gain = gain;
+    if (isDefined(q)) filter.q = q;
+    if (isDefined(type)) filter.type = type;
+    setFilters([...filters]);
+    sendThrottledModifyFilter(filter);
+  }, [filters, selected]);
+
   return (
     <ThemeProvider theme={theme}>
-      <TestContainer />
+      <ResponsiveCanvasWrapper
+        filters={filters.map(f => DisplayFilterNode.fromFilterParams(f))}
+        activeNodeIndex={selected}
+        onHandleSelected={setSelected}
+        onFilterChanged={handleFilterChanged}
+      />
       <GlobalStyles />
     </ThemeProvider>
   );

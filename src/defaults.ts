@@ -1,6 +1,6 @@
+import { UserSettings } from './settings';
 import { EQState } from "./types/eqstate";
 import { FilterParams } from "./types/filter";
-import { UserSettings } from "./types/settings";
 import { Theme } from "./types/theme";
 
 const DEFAULT_FILTERS: FilterParams[] = [48, 225, 1067, 5060].map(f => {
