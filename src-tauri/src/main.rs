@@ -29,6 +29,7 @@ fn check_config_dir(config_dir: String, state: tauri::State<'_, AppState>) -> Re
         });
     }
     *state.config_dir.lock().unwrap() = config_dir.into();
+    println!("config dir is ok");
     Ok(())
 }
 
@@ -44,6 +45,7 @@ fn init_eqplus_config(state: tauri::State<'_, AppState>) -> Result<EqState, AppE
         fs::write(path, eq_state.to_apo())?;
     }
     *state.eq_state.lock().unwrap() = eq_state.clone();
+    println!("{} file is written", EQPLUS_CONFIG);
     Ok(eq_state)
 }
 
@@ -56,6 +58,7 @@ fn check_config_file(state: tauri::State<'_, AppState>) -> Result<(), AppError> 
         let augmented = format!("{}\n{}", apo_config, INCLUDE_LINE);
         fs::write(path, augmented)?;
     }
+    println!("config file is ok");
     Ok(())
 }
 

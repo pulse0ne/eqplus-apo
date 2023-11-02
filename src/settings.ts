@@ -1,4 +1,4 @@
-import { BaseDirectory, exists, readTextFile, writeTextFile } from '@tauri-apps/api/fs';
+import { BaseDirectory, exists, readTextFile, writeTextFile, createDir } from '@tauri-apps/api/fs';
 
 export type UserSettings = {
   drawCompositeResponse: boolean,
@@ -19,6 +19,10 @@ const write = async (settings: UserSettings) => {
 };
 
 const load = async () => {
+  const appdirExists = await exists('', { dir: BaseDirectory.AppData });
+  if (!appdirExists) {
+    await createDir('', { dir: BaseDirectory.AppData, recursive: true });
+  }
   const settingsExists = await exists(FILENAME, { dir: BaseDirectory.AppData })
   if (!settingsExists) {
     await writeTextFile(FILENAME, JSON.stringify(DEFAULT_SETTINGS), { dir: BaseDirectory.AppData });

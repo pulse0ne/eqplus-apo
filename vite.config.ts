@@ -1,5 +1,11 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const _dirname = typeof globalThis.__dirname !== 'undefined'
+  ? globalThis.__dirname
+  : dirname(fileURLToPath(import.meta.url));
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
@@ -21,8 +27,8 @@ export default defineConfig(async () => ({
   build: {
     rollupOptions: {
       input: {
-        main: 'index.html',
-        splash: 'splash.html'
+        main: resolve(_dirname, 'index.html'),
+        splash: resolve(_dirname, 'splash.html')
       }
     }
   }
