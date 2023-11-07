@@ -1,9 +1,9 @@
 [package]
-name = "eqplus-apo-tauri"
-version = "0.0.0"
+name = "eqplus"
+version = "0.0.1"
 description = "A Tauri App"
-authors = ["you"]
-license = ""
+authors = ["Tyler Snedigar"]
+license = "MIT"
 repository = ""
 edition = "2021"
 
@@ -13,10 +13,33 @@ edition = "2021"
 tauri-build = { version = "1.5", features = [] }
 
 [dependencies]
-tauri = { version = "1.5", features = [ "dialog-open", "dialog-message", "fs-read-file", "fs-exists", "fs-write-file", "fs-create-dir", "shell-open"] }
+tauri = { version = "1.5", features = [
+  "dialog-open",
+  "dialog-message",
+  "fs-read-file",
+  "fs-exists",
+  "fs-write-file",
+  "fs-create-dir",
+  "shell-open"
+] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 regex = "1.10.2"
+log = "0.4.20"
+simple_logger = "4.2.0"
+windows = { version = "0.48.0", features = [
+    "Win32_Media_Audio",
+    "Win32_Media_Audio_Apo",
+    "Win32_Foundation",
+    "Win32_Devices_Properties",
+    "Win32_System_Com_StructuredStorage",
+    "Win32_System_Registry",
+    "Win32_System_Threading",
+    "Win32_Security",
+    "Win32_System_SystemServices",
+    "Win32_UI_Shell_PropertiesSystem"
+] }
+once_cell = "1.18.0"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem

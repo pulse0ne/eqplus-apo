@@ -5,6 +5,7 @@ use serde::Serialize;
 
 #[derive(Debug, Serialize)]
 pub enum ErrorType {
+    RegistryError,
     GenericIoError,
     InvalidConfigDirectory,
     InvalidConfig,

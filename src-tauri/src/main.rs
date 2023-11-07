@@ -5,9 +5,16 @@ use errors::{AppError, ErrorType};
 use filters::EqState;
 use std::{path::Path, fs::{self}, sync::Mutex};
 use tauri::generate_handler;
+use simple_logger::SimpleLogger;
+use log::{LevelFilter, info, warn, debug};
+
+use crate::device::DeviceInfo;
 
 mod errors;
 mod filters;
+mod device;
+mod com;
+mod registry;
 
 const E_APO_CONFIG: &str = "config.txt";
 const EQPLUS_CONFIG: &str = "eqplus.txt";
@@ -21,36 +28,41 @@ struct AppState {
 
 #[tauri::command]
 fn check_config_dir(config_dir: String, state: tauri::State<'_, AppState>) -> Result<(), AppError> {
+    info!("checking config dir...");
     let path = Path::new(config_dir.as_str());
     if !path.exists() || !path.join(E_APO_CONFIG).exists() {
+        warn!("Invalid config directory, notifying front-end");
         return Err(AppError {
             err_type: ErrorType::InvalidConfigDirectory,
             message: format!("{} is not a valid EqualizerAPO config directory", path.display())
         });
     }
     *state.config_dir.lock().unwrap() = config_dir.into();
-    println!("config dir is ok");
+    info!("config dir is ok");
     Ok(())
 }
 
 #[tauri::command]
 fn init_eqplus_config(state: tauri::State<'_, AppState>) -> Result<EqState, AppError> {
+    info!("initializing {}...", EQPLUS_CONFIG);
     let mut eq_state: EqState = EqState::default();
     let config_dir = state.config_dir.lock().unwrap();
     let path = Path::new(config_dir.as_str()).join(EQPLUS_CONFIG);
     if path.exists() {
         let raw = fs::read_to_string(path)?;
         eq_state = EqState::from_apo_raw(raw)?;
+        info!("{} file loaded successfully", EQPLUS_CONFIG);
     } else {
         fs::write(path, eq_state.to_apo())?;
+        info!("{} file written successfully", EQPLUS_CONFIG);
     }
     *state.eq_state.lock().unwrap() = eq_state.clone();
-    println!("{} file is written", EQPLUS_CONFIG);
     Ok(eq_state)
 }
 
 #[tauri::command]
 fn check_config_file(state: tauri::State<'_, AppState>) -> Result<(), AppError> {
+    info!("checking config file for include line...");
     let config_dir = state.config_dir.lock().unwrap();
     let path = Path::new(config_dir.as_str()).join(E_APO_CONFIG);
     let apo_config = fs::read_to_string(path.clone())?;
@@ -58,7 +70,7 @@ fn check_config_file(state: tauri::State<'_, AppState>) -> Result<(), AppError> 
         let augmented = format!("{}\n{}", apo_config, INCLUDE_LINE);
         fs::write(path, augmented)?;
     }
-    println!("config file is ok");
+    info!("config file is ok");
     Ok(())
 }
 
@@ -85,7 +97,7 @@ fn get_state(state: tauri::State<'_, AppState>) -> EqState {
 
 #[tauri::command]
 fn modify_filter(filter: filters::FilterParams, state: tauri::State<'_, AppState>) -> Result<(), AppError> {
-    println!("modifying filter {}", filter.id);
+    debug!("modifying filter {}", filter.id);
     let eq_state = &mut state.eq_state.lock().unwrap();
     let new_filters: Vec<filters::FilterParams> = eq_state.filters
         .iter()
@@ -144,6 +156,18 @@ fn quit(reason: String, app_handle: tauri::AppHandle) {
 }
 
 fn main() {
+    SimpleLogger::new().with_level(LevelFilter::Trace).init().unwrap();
+
+    // TODO: move this to be available to front-end
+
+    // OUR VERSION
+    info!("Our devices:");
+
+    let devices = DeviceInfo::enumerate().expect("FAILED TO ENUMERATE DEVICES");
+    for d in devices {
+        info!("{} {} {}", d.guid, d.name, d.apo_installed);
+    }
+
     tauri::Builder::default()
         .manage(AppState::default())
         .invoke_handler(generate_handler![

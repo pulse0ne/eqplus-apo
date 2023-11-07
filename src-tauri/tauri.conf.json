@@ -7,8 +7,8 @@
     "withGlobalTauri": false
   },
   "package": {
-    "productName": "eqplus-apo-tauri",
-    "version": "0.0.0"
+    "productName": "eq+",
+    "version": "0.0.1"
   },
   "tauri": {
     "allowlist": {
