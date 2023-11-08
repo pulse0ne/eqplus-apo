@@ -3,6 +3,7 @@
 use std::{slice, ffi::OsString, os::windows::prelude::OsStringExt};
 
 use once_cell::sync::Lazy;
+use serde::Serialize;
 use windows::Win32::Media::Audio::{self, PKEY_AudioEndpoint_GUID};
 use windows::Win32::Media::Audio::Apo::{PKEY_FX_PreMixEffectClsid, PKEY_FX_PostMixEffectClsid, PKEY_FX_StreamEffectClsid, PKEY_FX_ModeEffectClsid, PKEY_FX_EndpointEffectClsid};
 use windows::Win32::System::Com::{self, CLSIDFromString, StructuredStorage, STGM_READ, VT_LPWSTR};
@@ -48,7 +49,7 @@ unsafe impl Send for Enumerator {}
 unsafe impl Sync for Enumerator {}
 
 
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 pub struct DeviceInfo {
     pub guid: String,
     pub name: String,

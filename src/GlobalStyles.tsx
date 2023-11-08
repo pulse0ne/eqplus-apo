@@ -17,6 +17,7 @@ const GlobalStyles = createGlobalStyle`
     color: ${({ theme }) => theme.colors.text};
     overscroll-behavior: none;
     overflow: hidden;
+    font-size: 12px;
   }
 `;
 

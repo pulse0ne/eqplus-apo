@@ -1,4 +1,4 @@
 export type AppError = {
-  err_type: 'InvalidConfigDirectory'|'InvalidConfig'|'GenericIoError'|'Fatal',
+  err_type: 'InvalidConfigDirectory'|'InvalidConfig'|'GenericIoError'|'RegistryError'|'Fatal',
   message: string
 };

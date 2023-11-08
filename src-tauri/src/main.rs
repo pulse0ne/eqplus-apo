@@ -150,6 +150,23 @@ fn modify_preamp(preamp: f64, state: tauri::State<'_, AppState>) -> Result<(), A
 }
 
 #[tauri::command]
+fn query_devices() -> Result<Vec<DeviceInfo>, AppError> {
+    DeviceInfo::enumerate()
+}
+
+#[tauri::command]
+fn log_bridge(level: String, message: String) {
+    let log_level = match level.as_str() {
+        "debug" => log::Level::Debug,
+        "info" => log::Level::Info,
+        "warn" => log::Level::Warn,
+        "error" => log::Level::Error,
+        _ => log::Level::Info,
+    };
+    log::log!(target: "bridge", log_level, "{}", message);
+}
+
+#[tauri::command]
 fn quit(reason: String, app_handle: tauri::AppHandle) {
     println!("Quitting with reason: {}", reason);
     app_handle.exit(0);
@@ -159,13 +176,10 @@ fn main() {
     SimpleLogger::new().with_level(LevelFilter::Trace).init().unwrap();
 
     // TODO: move this to be available to front-end
-
-    // OUR VERSION
     info!("Our devices:");
-
     let devices = DeviceInfo::enumerate().expect("FAILED TO ENUMERATE DEVICES");
     for d in devices {
-        info!("{} {} {}", d.guid, d.name, d.apo_installed);
+        info!("  {} {} {}", d.guid, d.name, d.apo_installed);
     }
 
     tauri::Builder::default()
@@ -180,6 +194,8 @@ fn main() {
             add_filter,
             remove_filter,
             modify_preamp,
+            query_devices,
+            log_bridge,
             quit,
         ])
         .run(tauri::generate_context!())

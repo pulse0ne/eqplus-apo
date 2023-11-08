@@ -8,6 +8,10 @@ import { invoke } from '@tauri-apps/api';
 import { EQState } from './types/eqstate';
 import isDefined from './utils/isDefined';
 import throttle from './utils/throttle';
+import { DeviceInfo } from './types/device';
+import { info } from './utils/log-bridge';
+import { HBox, VBox } from './components/FlexBox';
+import { Select, SelectOption } from './components/Select';
 
 const THROTTLE_TIMEOUT = 100;
 
@@ -50,6 +54,16 @@ function ResponsiveCanvasWrapper(props: Omit<CanvasPlotProps, 'width'|'height'|'
   );
 }
 
+invoke('query_devices')
+  .then(res => {
+    const devices = res as DeviceInfo[];
+    devices.forEach(device => {
+      info(`Name: ${device.name}`);
+      info(`GUID: ${device.guid}`);
+      info(`APO installed: ${device.apo_installed}`);
+    });
+  });
+
 function App() {
   const [ theme ] = useState<DefaultTheme>(DEFAULT_THEMES[0]);
   const [ filters, setFilters ] = useState<FilterParams[]>([]);
@@ -77,12 +91,34 @@ function App() {
 
   return (
     <ThemeProvider theme={theme}>
-      <ResponsiveCanvasWrapper
-        filters={filters.map(f => DisplayFilterNode.fromFilterParams(f))}
-        activeNodeIndex={selected}
-        onHandleSelected={setSelected}
-        onFilterChanged={handleFilterChanged}
-      />
+      <VBox>
+        <ResponsiveCanvasWrapper
+          filters={filters.map(f => DisplayFilterNode.fromFilterParams(f))}
+          activeNodeIndex={selected}
+          onHandleSelected={setSelected}
+          onFilterChanged={handleFilterChanged}
+        />
+        <Select>
+          <SelectOption value="Test Option 1">
+            <HBox $justifyContent="space-between" $alignItems="center">
+              <span>Test Option 1</span>
+              <HBox $alignItems="center">
+                <span>APO Not Installed</span>
+                <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'red' }}></div>
+              </HBox>
+            </HBox>
+          </SelectOption>
+          <SelectOption value="Test Option 2">
+            <HBox $justifyContent="space-between" $alignItems="center">
+              <span>Test Option 2</span>
+              <HBox $alignItems="center">
+                <span>APO Installed</span>
+                <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'green' }}></div>
+              </HBox>
+            </HBox>
+          </SelectOption>
+        </Select>
+      </VBox>
       <GlobalStyles />
     </ThemeProvider>
   );
