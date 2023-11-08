@@ -38,7 +38,7 @@ fn check_config_dir(config_dir: String, state: tauri::State<'_, AppState>) -> Re
         });
     }
     *state.config_dir.lock().unwrap() = config_dir.into();
-    info!("config dir is ok");
+    info!("...config dir is ok");
     Ok(())
 }
 
@@ -51,10 +51,10 @@ fn init_eqplus_config(state: tauri::State<'_, AppState>) -> Result<EqState, AppE
     if path.exists() {
         let raw = fs::read_to_string(path)?;
         eq_state = EqState::from_apo_raw(raw)?;
-        info!("{} file loaded successfully", EQPLUS_CONFIG);
+        info!("...{} file loaded successfully", EQPLUS_CONFIG);
     } else {
         fs::write(path, eq_state.to_apo())?;
-        info!("{} file written successfully", EQPLUS_CONFIG);
+        info!("...{} file written successfully", EQPLUS_CONFIG);
     }
     *state.eq_state.lock().unwrap() = eq_state.clone();
     Ok(eq_state)
@@ -70,7 +70,7 @@ fn check_config_file(state: tauri::State<'_, AppState>) -> Result<(), AppError> 
         let augmented = format!("{}\n{}", apo_config, INCLUDE_LINE);
         fs::write(path, augmented)?;
     }
-    info!("config file is ok");
+    info!("...config file is ok");
     Ok(())
 }
 
@@ -174,13 +174,6 @@ fn quit(reason: String, app_handle: tauri::AppHandle) {
 
 fn main() {
     SimpleLogger::new().with_level(LevelFilter::Trace).init().unwrap();
-
-    // TODO: move this to be available to front-end
-    info!("Our devices:");
-    let devices = DeviceInfo::enumerate().expect("FAILED TO ENUMERATE DEVICES");
-    for d in devices {
-        info!("  {} {} {}", d.guid, d.name, d.apo_installed);
-    }
 
     tauri::Builder::default()
         .manage(AppState::default())

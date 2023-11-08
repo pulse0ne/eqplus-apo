@@ -57,8 +57,8 @@ pub struct DeviceInfo {
 }
 
 impl DeviceInfo {
+    #[cfg(target_os = "windows")]
     pub fn enumerate() -> Result<Vec<DeviceInfo>, AppError> {
-        // PKEY_AudioEndpoint_GUID;
         unsafe {
             let device_collection = ENUMERATOR
                 .0
@@ -109,6 +109,16 @@ impl DeviceInfo {
             }
             return Ok(devices);
         }
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    pub fn enumerate() -> Result<Vec<DeviceInfo>, AppError> {
+        let dummy_device = DeviceInfo {
+            guid: "00000000-0000-0000-0000-000000000000".to_string(),
+            name: "Dummy Device".to_string(),
+            apo_installed: true
+        };
+        return vec![dummy_device];
     }
 }
 
