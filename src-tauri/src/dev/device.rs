@@ -1,3 +1,7 @@
+use serde::Serialize;
+
+use crate::errors::AppError;
+
 #[derive(Clone, Serialize)]
 pub struct DeviceInfo {
     pub guid: String,
@@ -8,8 +12,8 @@ pub struct DeviceInfo {
 impl DeviceInfo {
     pub fn enumerate() -> Result<Vec<DeviceInfo>, AppError> {
         Ok(vec![DeviceInfo{
-            guid: "xxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-            name: "Dummy Device",
+            guid: format!("xxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"),
+            name: format!("Dummy Device"),
             apo_installed: true,
         }])
     }

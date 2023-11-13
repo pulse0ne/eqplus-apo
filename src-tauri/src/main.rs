@@ -5,6 +5,8 @@ mod errors;
 mod filters;
 #[cfg(windows)]
 mod win32;
+#[cfg(not(windows))]
+mod dev;
 
 use errors::{AppError, ErrorType};
 use filters::EqState;
@@ -175,7 +177,7 @@ fn quit(reason: String, app_handle: tauri::AppHandle) {
 }
 
 fn main() {
-    SimpleLogger::new().with_level(LevelFilter::Trace).init().unwrap();
+    SimpleLogger::new().with_level(LevelFilter::Debug).init().unwrap();
 
     tauri::Builder::default()
         .manage(AppState::default())
