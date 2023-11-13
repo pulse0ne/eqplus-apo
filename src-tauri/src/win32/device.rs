@@ -11,8 +11,9 @@ use windows::Win32::Devices::Properties;
 use windows::Win32::UI::Shell::PropertiesSystem::{IPropertyStore, PROPERTYKEY};
 use windows::core::{GUID, HSTRING};
 
-use crate::{errors::{AppError, ErrorType}, registry::{self}};
-use crate::com;
+use crate::errors::{AppError, ErrorType};
+use super::com;
+use super::registry;
 
 const EQUALIZERAPO_PRE_MIX_GUID: GUID = GUID::from_u128(0xeacd2258_fcac_4ff4_b36d_419e924a6d79);
 const EQUALIZERAPO_POST_MIX_GUID: GUID = GUID::from_u128(0xec1cc9ce_faed_4822_828a_82a81a6f018f);
@@ -57,7 +58,6 @@ pub struct DeviceInfo {
 }
 
 impl DeviceInfo {
-    #[cfg(target_os = "windows")]
     pub fn enumerate() -> Result<Vec<DeviceInfo>, AppError> {
         unsafe {
             let device_collection = ENUMERATOR
@@ -109,16 +109,6 @@ impl DeviceInfo {
             }
             return Ok(devices);
         }
-    }
-
-    #[cfg(not(target_os = "windows"))]
-    pub fn enumerate() -> Result<Vec<DeviceInfo>, AppError> {
-        let dummy_device = DeviceInfo {
-            guid: "00000000-0000-0000-0000-000000000000".to_string(),
-            name: "Dummy Device".to_string(),
-            apo_installed: true
-        };
-        return vec![dummy_device];
     }
 }
 

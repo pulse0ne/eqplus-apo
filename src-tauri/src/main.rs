@@ -1,20 +1,22 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod errors;
+mod filters;
+#[cfg(windows)]
+mod win32;
+
 use errors::{AppError, ErrorType};
 use filters::EqState;
 use std::{path::Path, fs::{self}, sync::Mutex};
 use tauri::generate_handler;
 use simple_logger::SimpleLogger;
 use log::{LevelFilter, info, warn, debug};
+#[cfg(windows)]
+use win32::device::DeviceInfo;
 
-use crate::device::DeviceInfo;
-
-mod errors;
-mod filters;
-mod device;
-mod com;
-mod registry;
+#[cfg(not(windows))]
+use dev::device::DeviceInfo;
 
 const E_APO_CONFIG: &str = "config.txt";
 const EQPLUS_CONFIG: &str = "eqplus.txt";
