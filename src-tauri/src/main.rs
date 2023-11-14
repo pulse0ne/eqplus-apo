@@ -54,7 +54,7 @@ fn init_eqplus_config(state: tauri::State<'_, AppState>) -> Result<EqState, AppE
     let path = Path::new(config_dir.as_str()).join(EQPLUS_CONFIG);
     if path.exists() {
         let raw = fs::read_to_string(path)?;
-        eq_state = EqState::from_apo_raw(raw)?;
+        eq_state = EqState::from_apo_raw(raw.as_str())?;
         info!("...{} file loaded successfully", EQPLUS_CONFIG);
     } else {
         fs::write(path, eq_state.to_apo())?;

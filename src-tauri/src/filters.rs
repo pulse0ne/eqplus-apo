@@ -68,7 +68,7 @@ impl EqState {
         }
     }
     
-    pub fn from_apo_raw(raw_apo_fmt: String) -> Result<EqState, AppError> {
+    pub fn from_apo_raw(raw_apo_fmt: &str) -> Result<EqState, AppError> {
         let lines = raw_apo_fmt.split('\n');
         let mut filters: Vec<FilterParams> = vec![];
         let mut preamp = 0.0f64;
@@ -78,7 +78,7 @@ impl EqState {
                 continue;
             }
             if line.starts_with("Channel") {
-                return Err(err(String::from("Independent channel EQ i not currently supported")));
+                return Err(err(String::from("Independent channel EQ is not currently supported")));
             }
             if line.starts_with("Preamp") {
                 preamp = process_preamp_line(line)?;
@@ -221,6 +221,36 @@ fn process_filter_type(raw_filter_type: &str) -> Result<FilterType, AppError> {
     }
 }
 
+pub struct FilterMapping {
+    pub device_name: String,
+    pub eq: EqState,
+}
+
+impl FilterMapping {
+    pub fn from_apo_raw(raw: &str) -> Result<Vec<FilterMapping>, AppError> {
+        let mut mappings: Vec<FilterMapping> = vec![];
+        let device_boundaries: Vec<usize> = raw.match_indices("Device:").map(|(i, _)| i).collect();
+        for b in device_boundaries {
+            println!("{}", b);
+        }
+        Ok(mappings)
+    }
+}
+
 fn err(msg: String) -> AppError {
     AppError { err_type: ErrorType::InvalidConfig, message: msg }
+}
+
+#[test]
+fn test_filter_mapping() {
+    let input = "
+    # something else
+    Device: test-device {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
+    Preamp: 0.0 dB
+    Device: other device {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
+    Preamp: 5.0 dB
+    ";
+
+    let _result = FilterMapping::from_apo_raw(input);
+
 }
