@@ -57,7 +57,7 @@ fn init_eqplus_config(state: tauri::State<'_, AppState>) -> Result<EqState, AppE
         eq_state = EqState::from_apo_raw(raw.as_str())?;
         info!("...{} file loaded successfully", EQPLUS_CONFIG);
     } else {
-        fs::write(path, eq_state.to_apo())?;
+        fs::write(path, eq_state.to_apo(false))?;
         info!("...{} file written successfully", EQPLUS_CONFIG);
     }
     *state.eq_state.lock().unwrap() = eq_state.clone();
@@ -117,7 +117,7 @@ fn modify_filter(filter: filters::FilterParams, state: tauri::State<'_, AppState
     eq_state.filters = new_filters;
 
     let path = state.config_dir.lock().unwrap();
-    fs::write(Path::new(path.as_str()).join(EQPLUS_CONFIG), eq_state.to_apo())?;
+    fs::write(Path::new(path.as_str()).join(EQPLUS_CONFIG), eq_state.to_apo(false))?;
     Ok(())
 }
 
@@ -126,7 +126,7 @@ fn add_filter(filter: filters::FilterParams, state: tauri::State<'_, AppState>) 
     let eq_state = &mut state.eq_state.lock().unwrap();
     eq_state.filters.push(filter);
     let path = state.config_dir.lock().unwrap();
-    fs::write(Path::new(path.as_str()).join(EQPLUS_CONFIG), eq_state.to_apo())?;
+    fs::write(Path::new(path.as_str()).join(EQPLUS_CONFIG), eq_state.to_apo(false))?;
     Ok(())
 }
 
@@ -140,7 +140,7 @@ fn remove_filter(id: String, state: tauri::State<'_, AppState>) -> Result<(), Ap
         .collect();
     eq_state.filters = new_filters;
     let path = state.config_dir.lock().unwrap();
-    fs::write(Path::new(path.as_str()).join(EQPLUS_CONFIG), eq_state.to_apo())?;
+    fs::write(Path::new(path.as_str()).join(EQPLUS_CONFIG), eq_state.to_apo(false))?;
     Ok(())
 }
 
@@ -149,7 +149,7 @@ fn modify_preamp(preamp: f64, state: tauri::State<'_, AppState>) -> Result<(), A
     let eq_state = &mut state.eq_state.lock().unwrap();
     eq_state.preamp = preamp;
     let path = state.config_dir.lock().unwrap();
-    fs::write(Path::new(path.as_str()).join(EQPLUS_CONFIG), eq_state.to_apo())?;
+    fs::write(Path::new(path.as_str()).join(EQPLUS_CONFIG), eq_state.to_apo(false))?;
     Ok(())
 }
 
