@@ -9,8 +9,8 @@ mod win32;
 mod dev;
 
 use errors::{AppError, ErrorType};
-use filters::EqState;
-use std::{path::Path, fs::{self}, sync::Mutex};
+use filters::{EqState, FilterMapping};
+use std::{path::Path, fs::{self}, sync::Mutex, collections::HashMap};
 use tauri::generate_handler;
 use simple_logger::SimpleLogger;
 use log::{LevelFilter, info, warn, debug};
@@ -27,7 +27,7 @@ const INCLUDE_LINE: &str = "Include: eqplus.txt";
 #[derive(Default)]
 struct AppState {
     config_dir: Mutex<String>,
-    eq_state: Mutex<EqState>,
+    mapping: Mutex<HashMap<String, FilterMapping>>,
 }
 
 #[tauri::command]
@@ -47,21 +47,21 @@ fn check_config_dir(config_dir: String, state: tauri::State<'_, AppState>) -> Re
 }
 
 #[tauri::command]
-fn init_eqplus_config(state: tauri::State<'_, AppState>) -> Result<EqState, AppError> {
+fn init_eqplus_config(state: tauri::State<'_, AppState>) -> Result<HashMap<String, FilterMapping>, AppError> {
     info!("initializing {}...", EQPLUS_CONFIG);
-    let mut eq_state: EqState = EqState::default();
+    let mut mapping: HashMap<String, FilterMapping> = FilterMapping::default();
     let config_dir = state.config_dir.lock().unwrap();
     let path = Path::new(config_dir.as_str()).join(EQPLUS_CONFIG);
     if path.exists() {
         let raw = fs::read_to_string(path)?;
-        eq_state = EqState::from_apo_raw(raw.as_str())?;
+        mapping = FilterMapping::from_apo_raw(raw.as_str())?;
         info!("...{} file loaded successfully", EQPLUS_CONFIG);
     } else {
-        fs::write(path, eq_state.to_apo(false))?;
+        fs::write(path, filters::mapping_to_apo(&mapping))?;
         info!("...{} file written successfully", EQPLUS_CONFIG);
     }
-    *state.eq_state.lock().unwrap() = eq_state.clone();
-    Ok(eq_state)
+    *state.mapping.lock().unwrap() = mapping.clone();
+    Ok(mapping)
 }
 
 #[tauri::command]
@@ -95,14 +95,14 @@ async fn show_main<R: tauri::Runtime>(app: tauri::AppHandle<R>, window: tauri::W
 }
 
 #[tauri::command]
-fn get_state(state: tauri::State<'_, AppState>) -> EqState {
-    state.eq_state.lock().unwrap().clone()
+fn get_state(state: tauri::State<'_, AppState>) -> HashMap<String, FilterMapping> {
+    state.mapping.lock().unwrap().clone()
 }
 
 #[tauri::command]
 fn modify_filter(filter: filters::FilterParams, state: tauri::State<'_, AppState>) -> Result<(), AppError> {
     debug!("modifying filter {}", filter.id);
-    let eq_state = &mut state.eq_state.lock().unwrap();
+    let eq_state = &mut state.mapping.lock().unwrap();
     let new_filters: Vec<filters::FilterParams> = eq_state.filters
         .iter()
         .map(|f| {
