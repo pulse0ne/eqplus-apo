@@ -9,6 +9,7 @@ pub enum ErrorType {
     GenericIoError,
     InvalidConfigDirectory,
     InvalidConfig,
+    BadArguments
 }
 
 #[derive(Debug, Serialize)]

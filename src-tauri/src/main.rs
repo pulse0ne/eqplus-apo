@@ -9,8 +9,8 @@ mod win32;
 mod dev;
 
 use errors::{AppError, ErrorType};
-use filters::{EqState, FilterMapping};
-use std::{path::Path, fs::{self}, sync::Mutex, collections::HashMap};
+use filters::{FilterBank, DeviceFilterMapping};
+use std::{path::Path, fs::{self}, sync::Mutex};
 use tauri::generate_handler;
 use simple_logger::SimpleLogger;
 use log::{LevelFilter, info, warn, debug};
@@ -20,6 +20,8 @@ use win32::device::DeviceInfo;
 #[cfg(not(windows))]
 use dev::device::DeviceInfo;
 
+use crate::filters::mapping_to_apo;
+
 const E_APO_CONFIG: &str = "config.txt";
 const EQPLUS_CONFIG: &str = "eqplus.txt";
 const INCLUDE_LINE: &str = "Include: eqplus.txt";
@@ -27,7 +29,7 @@ const INCLUDE_LINE: &str = "Include: eqplus.txt";
 #[derive(Default)]
 struct AppState {
     config_dir: Mutex<String>,
-    mapping: Mutex<HashMap<String, FilterMapping>>,
+    mapping: Mutex<DeviceFilterMapping>,
 }
 
 #[tauri::command]
@@ -47,14 +49,14 @@ fn check_config_dir(config_dir: String, state: tauri::State<'_, AppState>) -> Re
 }
 
 #[tauri::command]
-fn init_eqplus_config(state: tauri::State<'_, AppState>) -> Result<HashMap<String, FilterMapping>, AppError> {
+fn init_eqplus_config(state: tauri::State<'_, AppState>) -> Result<DeviceFilterMapping, AppError> {
     info!("initializing {}...", EQPLUS_CONFIG);
-    let mut mapping: HashMap<String, FilterMapping> = FilterMapping::default();
+    let mut mapping: DeviceFilterMapping = FilterBank::default();
     let config_dir = state.config_dir.lock().unwrap();
     let path = Path::new(config_dir.as_str()).join(EQPLUS_CONFIG);
     if path.exists() {
         let raw = fs::read_to_string(path)?;
-        mapping = FilterMapping::from_apo_raw(raw.as_str())?;
+        mapping = FilterBank::from_apo_raw(raw.as_str())?;
         info!("...{} file loaded successfully", EQPLUS_CONFIG);
     } else {
         fs::write(path, filters::mapping_to_apo(&mapping))?;
@@ -95,15 +97,16 @@ async fn show_main<R: tauri::Runtime>(app: tauri::AppHandle<R>, window: tauri::W
 }
 
 #[tauri::command]
-fn get_state(state: tauri::State<'_, AppState>) -> HashMap<String, FilterMapping> {
+fn get_state(state: tauri::State<'_, AppState>) -> DeviceFilterMapping {
     state.mapping.lock().unwrap().clone()
 }
 
 #[tauri::command]
-fn modify_filter(filter: filters::FilterParams, state: tauri::State<'_, AppState>) -> Result<(), AppError> {
-    debug!("modifying filter {}", filter.id);
-    let eq_state = &mut state.mapping.lock().unwrap();
-    let new_filters: Vec<filters::FilterParams> = eq_state.filters
+fn modify_filter(device: String, filter: filters::FilterParams, state: tauri::State<'_, AppState>) -> Result<(), AppError> {
+    debug!("modifying filter {} for device {}", filter.id, device);
+    let mappings = &mut state.mapping.lock().unwrap();
+    let device_mapping = mappings.get_mut(&device).ok_or(AppError{ err_type: ErrorType::BadArguments, message: format!("Could not find device with name {}", device) })?;
+    let new_filters: Vec<filters::FilterParams> = device_mapping.eq.filters
         .iter()
         .map(|f| {
             if f.id == filter.id {
@@ -114,42 +117,45 @@ fn modify_filter(filter: filters::FilterParams, state: tauri::State<'_, AppState
         })
         .collect();
 
-    eq_state.filters = new_filters;
+    device_mapping.eq.filters = new_filters;
 
     let path = state.config_dir.lock().unwrap();
-    fs::write(Path::new(path.as_str()).join(EQPLUS_CONFIG), eq_state.to_apo(false))?;
+    update_config_file(&path, mappings)?;
     Ok(())
 }
 
 #[tauri::command]
-fn add_filter(filter: filters::FilterParams, state: tauri::State<'_, AppState>) -> Result<(), AppError> {
-    let eq_state = &mut state.eq_state.lock().unwrap();
-    eq_state.filters.push(filter);
+fn add_filter(device: String, filter: filters::FilterParams, state: tauri::State<'_, AppState>) -> Result<(), AppError> {
+    let mappings = &mut state.mapping.lock().unwrap();
+    let device_mapping = mappings.get_mut(&device).ok_or(AppError{ err_type: ErrorType::BadArguments, message: format!("Could not find device with name {}", device)})?;
+    device_mapping.eq.filters.push(filter);
     let path = state.config_dir.lock().unwrap();
-    fs::write(Path::new(path.as_str()).join(EQPLUS_CONFIG), eq_state.to_apo(false))?;
+    update_config_file(&path, mappings)?;
     Ok(())
 }
 
 #[tauri::command]
-fn remove_filter(id: String, state: tauri::State<'_, AppState>) -> Result<(), AppError> {
-    let eq_state = &mut state.eq_state.lock().unwrap();
-    let new_filters = eq_state.filters
+fn remove_filter(device: String, id: String, state: tauri::State<'_, AppState>) -> Result<(), AppError> {
+    let mappings = &mut state.mapping.lock().unwrap();
+    let device_mapping = mappings.get_mut(&device).ok_or(AppError{ err_type: ErrorType::BadArguments, message: format!("Could not find device with name {}", device)})?;
+    let new_filters = device_mapping.eq.filters
         .clone()
         .into_iter()
         .filter(|x| x.id == id)
         .collect();
-    eq_state.filters = new_filters;
+    device_mapping.eq.filters = new_filters;
     let path = state.config_dir.lock().unwrap();
-    fs::write(Path::new(path.as_str()).join(EQPLUS_CONFIG), eq_state.to_apo(false))?;
+    update_config_file(&path, mappings)?;
     Ok(())
 }
 
 #[tauri::command]
-fn modify_preamp(preamp: f64, state: tauri::State<'_, AppState>) -> Result<(), AppError> {
-    let eq_state = &mut state.eq_state.lock().unwrap();
-    eq_state.preamp = preamp;
+fn modify_preamp(device: String, preamp: f64, state: tauri::State<'_, AppState>) -> Result<(), AppError> {
+    let mappings = &mut state.mapping.lock().unwrap();
+    let device_mapping = mappings.get_mut(&device).ok_or(AppError{ err_type: ErrorType::BadArguments, message: format!("Could not find device with name {}", device)})?;
+    device_mapping.eq.preamp = preamp;
     let path = state.config_dir.lock().unwrap();
-    fs::write(Path::new(path.as_str()).join(EQPLUS_CONFIG), eq_state.to_apo(false))?;
+    update_config_file(&path, mappings)?;
     Ok(())
 }
 
@@ -174,6 +180,11 @@ fn log_bridge(level: String, message: String) {
 fn quit(reason: String, app_handle: tauri::AppHandle) {
     println!("Quitting with reason: {}", reason);
     app_handle.exit(0);
+}
+
+fn update_config_file(path: &str, mappings: &DeviceFilterMapping) -> Result<(), AppError> {
+    fs::write(Path::new(path).join(EQPLUS_CONFIG), mapping_to_apo(mappings))?;
+    Ok(())
 }
 
 fn main() {

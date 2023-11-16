@@ -5,10 +5,10 @@ import { CanvasPlot, CanvasPlotProps } from './components/CanvasPlot';
 import { DEFAULT_THEMES } from './defaults';
 import { DisplayFilterNode, FilterChanges, FilterParams } from './types/filter';
 import { invoke } from '@tauri-apps/api';
-import { EQState } from './types/eqstate';
+import { DeviceFilterMapping, EQState } from './types/eqstate';
 import isDefined from './utils/isDefined';
 import throttle from './utils/throttle';
-import { DeviceInfo } from './types/device';
+import { DeviceInfo, deviceName } from './types/device';
 import { info } from './utils/log-bridge';
 import { HBox, VBox } from './components/FlexBox';
 import { Select, SelectOption } from './components/Select';
@@ -18,7 +18,7 @@ const THROTTLE_TIMEOUT = 100;
 type Dimension = { w: number, h: number };
 
 const sendThrottledModifyFilter: (filter: FilterParams) => void = throttle((filter: FilterParams) => {
-  invoke('modify_filter', { filter });
+  invoke('modify_filter', { device: 'all', filter });
 }, THROTTLE_TIMEOUT);
 
 function ResponsiveCanvasWrapper(props: Omit<CanvasPlotProps, 'width'|'height'|'disabled'>) {
@@ -61,6 +61,7 @@ invoke('query_devices')
       info(`Name: ${device.name}`);
       info(`GUID: ${device.guid}`);
       info(`APO installed: ${device.apo_installed}`);
+      info(`Cleaned up: ${deviceName(device)}`);
     });
   });
 
@@ -72,9 +73,9 @@ function App() {
   useEffect(() => {
     invoke('get_state')
       .then(res => {
-        const state = res as EQState;
+        const state = res as DeviceFilterMapping;
         console.log(state);
-        setFilters(state.filters);
+        setFilters(state['all']?.eq?.filters ?? []);
       });
   }, []);
 
