@@ -5,7 +5,7 @@ import { CanvasPlot, CanvasPlotProps } from './components/CanvasPlot';
 import { DEFAULT_THEMES } from './defaults';
 import { DisplayFilterNode, FilterChanges, FilterParams } from './types/filter';
 import { invoke } from '@tauri-apps/api';
-import { DeviceFilterMapping, EQState } from './types/eqstate';
+import { DeviceFilterMapping } from './types/eqstate';
 import isDefined from './utils/isDefined';
 import throttle from './utils/throttle';
 import { DeviceInfo, deviceName } from './types/device';
@@ -61,7 +61,7 @@ invoke('query_devices')
       info(`Name: ${device.name}`);
       info(`GUID: ${device.guid}`);
       info(`APO installed: ${device.apo_installed}`);
-      info(`Cleaned up: ${deviceName(device)}`);
+      info(`Cleaned up name: ${deviceName(device)}`);
     });
   });
 

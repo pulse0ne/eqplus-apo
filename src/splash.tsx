@@ -23,26 +23,13 @@ const COMMANDS = {
   quit: 'quit'
 };
 
-function checkConfigDir(dir: string): Promise<unknown> {
-  return invoke(COMMANDS.checkConfigDir, { configDir: dir})
+function checkConfigDir(): Promise<unknown> {
+  return invoke(COMMANDS.checkConfigDir)
     .catch(e => {
       const err = e as AppError;
       console.error(`[${err.err_type}]: ${err.message}`);
-      if (err.err_type === 'InvalidConfigDirectory') {
-        return dialog.message(`${err.message}. Click 'Ok' to select a new one.`, { title: 'Invalid EqualizerAPO Config', type: 'error' })
-          .then(() => dialog.open({ title: 'Select EqualizerAPO Config Directory', directory: true }))
-          .then((value) => {
-            if (value && value.length) {
-              const path = value as string;
-              return Settings.update({ configDir: path })
-                .then(s => checkConfigDir(s.configDir));
-            } else {
-              return Promise.reject({ err_type: 'Fatal', message: 'Invalid selection' });
-            }
-          });
-      } else {
-        return Promise.reject({ err_type: 'Fatal', message: 'Invalid selection' });
-      }
+      return dialog.message(`${err.message}`, { title: 'Invalid EqualizerAPO Config', type: 'error' })
+        .then(() => invoke(COMMANDS.quit, { reason: 'Failed to get EqualizerAPO config' }));
     });
 }
 
@@ -57,13 +44,11 @@ function checkConfigFile(): Promise<void> {
 const App = () => {
   useEffect(() => {
     setTimeout(() => {
-      Settings.load().then(settings => {
-        checkConfigDir(settings.configDir)
-          .then(() => initEqplusConfig())
-          .then(() => checkConfigFile())
-          .then(() => setTimeout(() => invoke(COMMANDS.showMain), 1000))
-          .catch(() => console.error('Irrecoverable error, quitting')); // TODO
-      });
+      checkConfigDir()
+        .then(() => initEqplusConfig())
+        .then(() => checkConfigFile())
+        .then(() => setTimeout(() => invoke(COMMANDS.showMain), 1000))
+        .catch(() => console.error('Irrecoverable error, quitting')); // TODO
     }, 1000);
   }, []);
   return (

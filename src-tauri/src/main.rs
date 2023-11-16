@@ -16,9 +16,13 @@ use simple_logger::SimpleLogger;
 use log::{LevelFilter, info, warn, debug};
 #[cfg(windows)]
 use win32::device::DeviceInfo;
+#[cfg(windows)]
+use win32::config::get_equalizer_apo_config_dir;
 
 #[cfg(not(windows))]
 use dev::device::DeviceInfo;
+#[cfg(not(windows))]
+use dev::config::get_equalizer_apo_config_dir;
 
 use crate::filters::mapping_to_apo;
 
@@ -33,23 +37,22 @@ struct AppState {
 }
 
 #[tauri::command]
-fn check_config_dir(config_dir: String, state: tauri::State<'_, AppState>) -> Result<(), AppError> {
+async fn check_config_dir(state: tauri::State<'_, AppState>) -> Result<(), AppError> {
     info!("checking config dir...");
-    let path = Path::new(config_dir.as_str());
-    if !path.exists() || !path.join(E_APO_CONFIG).exists() {
-        warn!("Invalid config directory, notifying front-end");
-        return Err(AppError {
-            err_type: ErrorType::InvalidConfigDirectory,
-            message: format!("{} is not a valid EqualizerAPO config directory", path.display())
-        });
-    }
-    *state.config_dir.lock().unwrap() = config_dir.into();
+    let dir_from_registry = get_equalizer_apo_config_dir().map_err(|e| {
+        warn!("Invalid config directory: {}", e);
+        match e.err_type {
+            ErrorType::RegistryError => AppError { err_type: e.err_type, message: "Could not read config directory from registry. Is EqualizerAPO installed?".to_string() },
+            _ => e
+        }
+    })?;
+    *state.config_dir.lock().unwrap() = dir_from_registry;
     info!("...config dir is ok");
     Ok(())
 }
 
 #[tauri::command]
-fn init_eqplus_config(state: tauri::State<'_, AppState>) -> Result<DeviceFilterMapping, AppError> {
+async fn init_eqplus_config(state: tauri::State<'_, AppState>) -> Result<DeviceFilterMapping, AppError> {
     info!("initializing {}...", EQPLUS_CONFIG);
     let mut mapping: DeviceFilterMapping = FilterBank::default();
     let config_dir = state.config_dir.lock().unwrap();
@@ -67,7 +70,7 @@ fn init_eqplus_config(state: tauri::State<'_, AppState>) -> Result<DeviceFilterM
 }
 
 #[tauri::command]
-fn check_config_file(state: tauri::State<'_, AppState>) -> Result<(), AppError> {
+async fn check_config_file(state: tauri::State<'_, AppState>) -> Result<(), AppError> {
     info!("checking config file for include line...");
     let config_dir = state.config_dir.lock().unwrap();
     let path = Path::new(config_dir.as_str()).join(E_APO_CONFIG);
@@ -97,12 +100,12 @@ async fn show_main<R: tauri::Runtime>(app: tauri::AppHandle<R>, window: tauri::W
 }
 
 #[tauri::command]
-fn get_state(state: tauri::State<'_, AppState>) -> DeviceFilterMapping {
-    state.mapping.lock().unwrap().clone()
+async fn get_state(state: tauri::State<'_, AppState>) -> Result<DeviceFilterMapping, AppError> {
+    Ok(state.mapping.lock().unwrap().clone())
 }
 
 #[tauri::command]
-fn modify_filter(device: String, filter: filters::FilterParams, state: tauri::State<'_, AppState>) -> Result<(), AppError> {
+async fn modify_filter(device: String, filter: filters::FilterParams, state: tauri::State<'_, AppState>) -> Result<(), AppError> {
     debug!("modifying filter {} for device {}", filter.id, device);
     let mappings = &mut state.mapping.lock().unwrap();
     let device_mapping = mappings.get_mut(&device).ok_or(AppError{ err_type: ErrorType::BadArguments, message: format!("Could not find device with name {}", device) })?;
@@ -125,7 +128,7 @@ fn modify_filter(device: String, filter: filters::FilterParams, state: tauri::St
 }
 
 #[tauri::command]
-fn add_filter(device: String, filter: filters::FilterParams, state: tauri::State<'_, AppState>) -> Result<(), AppError> {
+async fn add_filter(device: String, filter: filters::FilterParams, state: tauri::State<'_, AppState>) -> Result<(), AppError> {
     let mappings = &mut state.mapping.lock().unwrap();
     let device_mapping = mappings.get_mut(&device).ok_or(AppError{ err_type: ErrorType::BadArguments, message: format!("Could not find device with name {}", device)})?;
     device_mapping.eq.filters.push(filter);
@@ -135,7 +138,7 @@ fn add_filter(device: String, filter: filters::FilterParams, state: tauri::State
 }
 
 #[tauri::command]
-fn remove_filter(device: String, id: String, state: tauri::State<'_, AppState>) -> Result<(), AppError> {
+async fn remove_filter(device: String, id: String, state: tauri::State<'_, AppState>) -> Result<(), AppError> {
     let mappings = &mut state.mapping.lock().unwrap();
     let device_mapping = mappings.get_mut(&device).ok_or(AppError{ err_type: ErrorType::BadArguments, message: format!("Could not find device with name {}", device)})?;
     let new_filters = device_mapping.eq.filters
@@ -150,7 +153,7 @@ fn remove_filter(device: String, id: String, state: tauri::State<'_, AppState>) 
 }
 
 #[tauri::command]
-fn modify_preamp(device: String, preamp: f64, state: tauri::State<'_, AppState>) -> Result<(), AppError> {
+async fn modify_preamp(device: String, preamp: f64, state: tauri::State<'_, AppState>) -> Result<(), AppError> {
     let mappings = &mut state.mapping.lock().unwrap();
     let device_mapping = mappings.get_mut(&device).ok_or(AppError{ err_type: ErrorType::BadArguments, message: format!("Could not find device with name {}", device)})?;
     device_mapping.eq.preamp = preamp;
@@ -160,7 +163,7 @@ fn modify_preamp(device: String, preamp: f64, state: tauri::State<'_, AppState>)
 }
 
 #[tauri::command]
-fn query_devices() -> Result<Vec<DeviceInfo>, AppError> {
+async fn query_devices() -> Result<Vec<DeviceInfo>, AppError> {
     DeviceInfo::enumerate()
 }
 
