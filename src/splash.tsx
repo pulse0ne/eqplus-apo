@@ -1,6 +1,5 @@
 import ReactDOM from 'react-dom/client';
 
-import * as Settings from './settings';
 import { invoke } from '@tauri-apps/api/tauri';
 import { AppError } from './types/errors';
 import { dialog } from '@tauri-apps/api';

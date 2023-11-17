@@ -46,6 +46,11 @@ async fn check_config_dir(state: tauri::State<'_, AppState>) -> Result<(), AppEr
             _ => e
         }
     })?;
+    debug!("config dir: {}", dir_from_registry);
+    let path_to_config = Path::new(dir_from_registry.as_str()).join(EQPLUS_CONFIG);
+    if !path_to_config.exists() {
+        return Err(AppError { err_type: ErrorType::InvalidConfigDirectory, message: "Config directory was read from registry, but no config.txt file was found in it!".to_string() });
+    }
     *state.config_dir.lock().unwrap() = dir_from_registry;
     info!("...config dir is ok");
     Ok(())
@@ -70,11 +75,11 @@ async fn init_eqplus_config(state: tauri::State<'_, AppState>) -> Result<DeviceF
 }
 
 #[tauri::command]
-async fn check_config_file(state: tauri::State<'_, AppState>) -> Result<(), AppError> {
+fn check_config_file(state: tauri::State<'_, AppState>) -> Result<(), AppError> {
     info!("checking config file for include line...");
     let config_dir = state.config_dir.lock().unwrap();
     let path = Path::new(config_dir.as_str()).join(E_APO_CONFIG);
-    let apo_config = fs::read_to_string(path.clone())?;
+    let apo_config = fs::read_to_string(path.clone())?; // TODO: handle this better?
     if !apo_config.contains(INCLUDE_LINE) {
         let augmented = format!("{}\n{}", apo_config, INCLUDE_LINE);
         fs::write(path, augmented)?;
