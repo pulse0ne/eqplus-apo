@@ -1,4 +1,4 @@
-//! adapted from cpal
+//! adapted from cpal and equalizerapo
 
 use std::{slice, ffi::OsString, os::windows::prelude::OsStringExt};
 

@@ -12,6 +12,7 @@ import { DeviceInfo, deviceName } from './types/device';
 import { info } from './utils/log-bridge';
 import { HBox, VBox } from './components/FlexBox';
 import { Select, SelectOption } from './components/Select';
+import { GainSlider } from './components/GainSlider';
 
 const THROTTLE_TIMEOUT = 100;
 
@@ -119,6 +120,9 @@ function App() {
             </HBox>
           </SelectOption>
         </Select>
+        <HBox style={{ marginLeft: '20px' }}>
+          <GainSlider />
+        </HBox>
       </VBox>
       <GlobalStyles />
     </ThemeProvider>
