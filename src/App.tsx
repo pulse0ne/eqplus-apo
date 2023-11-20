@@ -122,6 +122,9 @@ function App() {
         </Select>
         <HBox style={{ marginLeft: '20px' }}>
           <GainSlider />
+          <GainSlider />
+          <GainSlider />
+          <GainSlider />
         </HBox>
       </VBox>
       <GlobalStyles />
