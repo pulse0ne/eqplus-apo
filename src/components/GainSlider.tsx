@@ -1,4 +1,5 @@
 import * as Slider from '@radix-ui/react-slider';
+import React from 'react';
 import styled from 'styled-components';
 
 const THUMB_WIDTH = 24;
@@ -39,7 +40,7 @@ const TickContainer = styled.div({
   right: 0
 });
 
-function Ticks() {
+const Ticks = React.memo(() => {
   return (
     <TickContainer>
       <div style={{ position: 'relative', flex: 1 }}>
@@ -54,7 +55,7 @@ function Ticks() {
       </div>
     </TickContainer>
   );
-} // TODO: memoize?
+});
 
 const GainSliderContainer = styled.div({
   position: 'relative',

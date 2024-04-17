@@ -36,8 +36,11 @@ struct AppState {
     mapping: Mutex<DeviceFilterMapping>,
 }
 
-#[tauri::command]
-async fn check_config_dir(state: tauri::State<'_, AppState>) -> Result<(), AppError> {
+struct ErrorState {
+    error: AppError
+}
+
+fn check_config_dir(state: &AppState) -> Result<(), AppError> {
     info!("checking config dir...");
     let dir_from_registry = get_equalizer_apo_config_dir().map_err(|e| {
         warn!("Invalid config directory: {}", e);
@@ -56,8 +59,7 @@ async fn check_config_dir(state: tauri::State<'_, AppState>) -> Result<(), AppEr
     Ok(())
 }
 
-#[tauri::command]
-async fn init_eqplus_config(state: tauri::State<'_, AppState>) -> Result<DeviceFilterMapping, AppError> {
+fn init_eqplus_config(state: &AppState) -> Result<(), AppError> {
     info!("initializing {}...", EQPLUS_CONFIG);
     let mut mapping: DeviceFilterMapping = FilterBank::default();
     let config_dir = state.config_dir.lock().unwrap();
@@ -71,11 +73,10 @@ async fn init_eqplus_config(state: tauri::State<'_, AppState>) -> Result<DeviceF
         info!("...{} file written successfully", EQPLUS_CONFIG);
     }
     *state.mapping.lock().unwrap() = mapping.clone();
-    Ok(mapping)
+    Ok(())
 }
 
-#[tauri::command]
-fn check_config_file(state: tauri::State<'_, AppState>) -> Result<(), AppError> {
+fn check_config_file(state: &AppState) -> Result<(), AppError> {
     info!("checking config file for include line...");
     let config_dir = state.config_dir.lock().unwrap();
     let path = Path::new(config_dir.as_str()).join(E_APO_CONFIG);
@@ -86,6 +87,11 @@ fn check_config_file(state: tauri::State<'_, AppState>) -> Result<(), AppError> 
     }
     info!("...config file is ok");
     Ok(())
+}
+
+#[tauri::command]
+fn get_error(err_state: tauri::State<'_, ErrorState>) -> AppError {
+    return err_state.error.clone();
 }
 
 #[tauri::command]
@@ -195,15 +201,42 @@ fn update_config_file(path: &str, mappings: &DeviceFilterMapping) -> Result<(), 
     Ok(())
 }
 
-fn main() {
-    SimpleLogger::new().with_level(LevelFilter::Debug).init().unwrap();
+fn initialize(state: &AppState) -> Result<(), AppError> {
+    println!("Initializing...");
+    // return Err(AppError{ err_type: ErrorType::InvalidConfigDirectory, message: "Invalid config directory!".into() });
+    check_config_dir(state)?;
+    init_eqplus_config(state)?;
+    check_config_file(state)?;
+    Ok(())
+}
 
-    tauri::Builder::default()
-        .manage(AppState::default())
+fn show_error_page(e: AppError) {
+    let err_state = ErrorState{ error: e };
+    let app = tauri::Builder::default()
+        .manage(err_state)
+        .invoke_handler(generate_handler![get_error])
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+
+    tauri::WindowBuilder::new(
+        &app,
+        "Error",
+        tauri::WindowUrl::App("error.html".into())
+    )
+        .center()
+        .inner_size(400f64, 200f64)
+        .title("eq+ error")
+        .build()
+        .expect("failed to build window")
+        .show()
+        .expect("failed to show error");
+    app.run(|_, _| {});
+}
+
+fn show_main_page(state: AppState) {
+    let app = tauri::Builder::default()
+        .manage(state)
         .invoke_handler(generate_handler![
-            check_config_dir,
-            check_config_file,
-            init_eqplus_config,
             show_main,
             get_state,
             modify_filter,
@@ -214,6 +247,30 @@ fn main() {
             log_bridge,
             quit,
         ])
-        .run(tauri::generate_context!())
+        .build(tauri::generate_context!())
         .expect("error while running tauri application");
+
+    tauri::WindowBuilder::new(
+        &app,
+        "main",
+        tauri::WindowUrl::App("index.html".into())
+    )
+        .center()
+        .title("eq+")
+        .build()
+        .expect("failed to build window")
+        .show()
+        .expect("failed to show window");
+    app.run(|_, _| {});
+}
+
+fn main() {
+    SimpleLogger::new().with_level(LevelFilter::Debug).init().unwrap();
+
+    let state = AppState::default();
+
+    match initialize(&state) {
+        Err(e) => show_error_page(e),
+        Ok(_) => show_main_page(state)
+    };
 }

@@ -3,7 +3,7 @@ use std::io;
 
 use serde::Serialize;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub enum ErrorType {
     RegistryError,
     GenericIoError,
@@ -12,7 +12,7 @@ pub enum ErrorType {
     BadArguments
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct AppError {
     pub err_type: ErrorType,
     pub message: String

@@ -49,18 +49,6 @@
     "security": {
       "csp": null
     },
-    "windows": [
-      {
-        "center": true,
-        "label": "splash",
-        "fullscreen": false,
-        "resizable": false,
-        "decorations": false,
-        "width": 400,
-        "height": 300,
-        "visible": true,
-        "url": "splash.html"
-      }
-    ]
+    "windows": []
   }
 }

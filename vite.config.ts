@@ -28,7 +28,7 @@ export default defineConfig(async () => ({
     rollupOptions: {
       input: {
         main: resolve(_dirname, 'index.html'),
-        splash: resolve(_dirname, 'splash.html')
+        error: resolve(_dirname, 'error.html')
       }
     }
   }
