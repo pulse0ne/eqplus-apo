@@ -1,7 +1,8 @@
 export type DeviceInfo = {
   name: string,
   guid: string,
-  apo_installed: boolean
+  apo_installed: boolean,
+  is_default: boolean
 };
 
 export function deviceName(info: DeviceInfo) {

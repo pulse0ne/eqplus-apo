@@ -1,0 +1,577 @@
+@font-face {
+  font-family: 'eqplusapo';
+  src:
+    url('./eqplusapo.ttf?9reg7d') format('truetype'),
+    url('./eqplusapo.woff?9reg7d') format('woff'),
+    url('./eqplusapo.svg?9reg7d#eqplusapo') format('svg');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+.icon {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  font-family: 'eqplusapo' !important;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.warning:before {
+  content: '\e900';
+}
+.add:before {
+  content: '\e901';
+}
+.add_circle:before {
+  content: '\e902';
+}
+.clear:before {
+  content: '\e903';
+}
+.content_copy:before {
+  content: '\e904';
+}
+.remove:before {
+  content: '\e905';
+}
+.remove_circle:before {
+  content: '\e906';
+}
+.report:before {
+  content: '\e907';
+}
+.navigate_before:before {
+  content: '\e908';
+}
+.navigate_next:before {
+  content: '\e909';
+}
+.tune:before {
+  content: '\e90a';
+}
+.arrow_drop_down:before {
+  content: '\e90b';
+}
+.arrow_drop_up:before {
+  content: '\e90c';
+}
+.cancel:before {
+  content: '\e90d';
+}
+.check:before {
+  content: '\e90e';
+}
+.expand_less:before {
+  content: '\e90f';
+}
+.expand_more:before {
+  content: '\e910';
+}
+.arrow_left:before {
+  content: '\e911';
+}
+.arrow_right:before {
+  content: '\e912';
+}
+.settings:before {
+  content: '\e913';
+}
+.toggle_off:before {
+  content: '\e914';
+}
+.toggle_on:before {
+  content: '\e915';
+}
+
+/* fontaudio */
+@font-face {
+  font-family: 'fontaudio';
+  src:url('./fontaudio.woff2?bcdf9e79b47ea68088754b5bebefeba7') format('woff2'),
+      url('./fontaudio.woff?bcdf9e79b47ea68088754b5bebefeba7') format('woff'),
+      url('./fontaudio.ttf?bcdf9e79b47ea68088754b5bebefeba7') format('truetype'),
+      url('./fontaudio.svg?bcdf9e79b47ea68088754b5bebefeba7#fontaudio') format('svg');
+}
+
+.audioicon:before {
+  font-family: fontaudio !important;
+  font-style: normal;
+  font-weight: normal !important;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.fad-ADR:before {
+  content: '\f101';
+}
+.fad-ADSR:before {
+  content: '\f102';
+}
+.fad-AHDSR:before {
+  content: '\f103';
+}
+.fad-AR:before {
+  content: '\f104';
+}
+.fad-armrecording:before {
+  content: '\f105';
+}
+.fad-arpchord:before {
+  content: '\f106';
+}
+.fad-arpdown:before {
+  content: '\f107';
+}
+.fad-arpdownandup:before {
+  content: '\f108';
+}
+.fad-arpdownup:before {
+  content: '\f109';
+}
+.fad-arpplayorder:before {
+  content: '\f10a';
+}
+.fad-arprandom:before {
+  content: '\f10b';
+}
+.fad-arpup:before {
+  content: '\f10c';
+}
+.fad-arpupandown:before {
+  content: '\f10d';
+}
+.fad-arpupdown:before {
+  content: '\f10e';
+}
+.fad-arrows-horz:before {
+  content: '\f10f';
+}
+.fad-arrows-vert:before {
+  content: '\f110';
+}
+.fad-automation-2p:before {
+  content: '\f111';
+}
+.fad-automation-3p:before {
+  content: '\f112';
+}
+.fad-automation-4p:before {
+  content: '\f113';
+}
+.fad-backward:before {
+  content: '\f114';
+}
+.fad-bluetooth:before {
+  content: '\f115';
+}
+.fad-caret-down:before {
+  content: '\f116';
+}
+.fad-caret-left:before {
+  content: '\f117';
+}
+.fad-caret-right:before {
+  content: '\f118';
+}
+.fad-caret-up:before {
+  content: '\f119';
+}
+.fad-close:before {
+  content: '\f11a';
+}
+.fad-copy:before {
+  content: '\f11b';
+}
+.fad-cpu:before {
+  content: '\f11c';
+}
+.fad-cutter:before {
+  content: '\f11d';
+}
+.fad-digital-colon:before {
+  content: '\f11e';
+}
+.fad-digital-dot:before {
+  content: '\f11f';
+}
+.fad-digital0:before {
+  content: '\f120';
+}
+.fad-digital1:before {
+  content: '\f121';
+}
+.fad-digital2:before {
+  content: '\f122';
+}
+.fad-digital3:before {
+  content: '\f123';
+}
+.fad-digital4:before {
+  content: '\f124';
+}
+.fad-digital5:before {
+  content: '\f125';
+}
+.fad-digital6:before {
+  content: '\f126';
+}
+.fad-digital7:before {
+  content: '\f127';
+}
+.fad-digital8:before {
+  content: '\f128';
+}
+.fad-digital9:before {
+  content: '\f129';
+}
+.fad-diskio:before {
+  content: '\f12a';
+}
+.fad-drumpad:before {
+  content: '\f12b';
+}
+.fad-duplicate:before {
+  content: '\f12c';
+}
+.fad-eraser:before {
+  content: '\f12d';
+}
+.fad-ffwd:before {
+  content: '\f12e';
+}
+.fad-filter-bandpass:before {
+  content: '\f12f';
+}
+.fad-filter-bell:before {
+  content: '\f130';
+}
+.fad-filter-bypass:before {
+  content: '\f131';
+}
+.fad-filter-highpass:before {
+  content: '\f132';
+}
+.fad-filter-lowpass:before {
+  content: '\f133';
+}
+.fad-filter-notch:before {
+  content: '\f134';
+}
+.fad-filter-rez-highpass:before {
+  content: '\f135';
+}
+.fad-filter-rez-lowpass:before {
+  content: '\f136';
+}
+.fad-filter-shelving-hi:before {
+  content: '\f137';
+}
+.fad-filter-shelving-lo:before {
+  content: '\f138';
+}
+.fad-foldback:before {
+  content: '\f139';
+}
+.fad-forward:before {
+  content: '\f13a';
+}
+.fad-h-expand:before {
+  content: '\f13b';
+}
+.fad-hardclip:before {
+  content: '\f13c';
+}
+.fad-hardclipcurve:before {
+  content: '\f13d';
+}
+.fad-headphones:before {
+  content: '\f13e';
+}
+.fad-keyboard:before {
+  content: '\f13f';
+}
+.fad-lock:before {
+  content: '\f140';
+}
+.fad-logo-aax:before {
+  content: '\f141';
+}
+.fad-logo-abletonlink:before {
+  content: '\f142';
+}
+.fad-logo-au:before {
+  content: '\f143';
+}
+.fad-logo-audacity:before {
+  content: '\f144';
+}
+.fad-logo-audiobus:before {
+  content: '\f145';
+}
+.fad-logo-cubase:before {
+  content: '\f146';
+}
+.fad-logo-fl:before {
+  content: '\f147';
+}
+.fad-logo-juce:before {
+  content: '\f148';
+}
+.fad-logo-ladspa:before {
+  content: '\f149';
+}
+.fad-logo-live:before {
+  content: '\f14a';
+}
+.fad-logo-lv2:before {
+  content: '\f14b';
+}
+.fad-logo-protools:before {
+  content: '\f14c';
+}
+.fad-logo-rackext:before {
+  content: '\f14d';
+}
+.fad-logo-reaper:before {
+  content: '\f14e';
+}
+.fad-logo-reason:before {
+  content: '\f14f';
+}
+.fad-logo-rewire:before {
+  content: '\f150';
+}
+.fad-logo-studioone:before {
+  content: '\f151';
+}
+.fad-logo-tracktion:before {
+  content: '\f152';
+}
+.fad-logo-vst:before {
+  content: '\f153';
+}
+.fad-logo-waveform:before {
+  content: '\f154';
+}
+.fad-loop:before {
+  content: '\f155';
+}
+.fad-metronome:before {
+  content: '\f156';
+}
+.fad-microphone:before {
+  content: '\f157';
+}
+.fad-midiplug:before {
+  content: '\f158';
+}
+.fad-modrandom:before {
+  content: '\f159';
+}
+.fad-modsawdown:before {
+  content: '\f15a';
+}
+.fad-modsawup:before {
+  content: '\f15b';
+}
+.fad-modsh:before {
+  content: '\f15c';
+}
+.fad-modsine:before {
+  content: '\f15d';
+}
+.fad-modsquare:before {
+  content: '\f15e';
+}
+.fad-modtri:before {
+  content: '\f15f';
+}
+.fad-modularplug:before {
+  content: '\f160';
+}
+.fad-mono:before {
+  content: '\f161';
+}
+.fad-mute:before {
+  content: '\f162';
+}
+.fad-next:before {
+  content: '\f163';
+}
+.fad-open:before {
+  content: '\f164';
+}
+.fad-paste:before {
+  content: '\f165';
+}
+.fad-pause:before {
+  content: '\f166';
+}
+.fad-pen:before {
+  content: '\f167';
+}
+.fad-phase:before {
+  content: '\f168';
+}
+.fad-play:before {
+  content: '\f169';
+}
+.fad-pointer:before {
+  content: '\f16a';
+}
+.fad-powerswitch:before {
+  content: '\f16b';
+}
+.fad-preset-a:before {
+  content: '\f16c';
+}
+.fad-preset-ab:before {
+  content: '\f16d';
+}
+.fad-preset-b:before {
+  content: '\f16e';
+}
+.fad-preset-ba:before {
+  content: '\f16f';
+}
+.fad-prev:before {
+  content: '\f170';
+}
+.fad-punch-in:before {
+  content: '\f171';
+}
+.fad-punch-out:before {
+  content: '\f172';
+}
+.fad-ram:before {
+  content: '\f173';
+}
+.fad-random-1dice:before {
+  content: '\f174';
+}
+.fad-random-2dice:before {
+  content: '\f175';
+}
+.fad-record:before {
+  content: '\f176';
+}
+.fad-redo:before {
+  content: '\f177';
+}
+.fad-repeat-one:before {
+  content: '\f178';
+}
+.fad-repeat:before {
+  content: '\f179';
+}
+.fad-rew:before {
+  content: '\f17a';
+}
+.fad-roundswitch-off:before {
+  content: '\f17b';
+}
+.fad-roundswitch-on:before {
+  content: '\f17c';
+}
+.fad-save:before {
+  content: '\f17d';
+}
+.fad-saveas:before {
+  content: '\f17e';
+}
+.fad-scissors:before {
+  content: '\f17f';
+}
+.fad-shuffle:before {
+  content: '\f180';
+}
+.fad-slider-round-1:before {
+  content: '\f181';
+}
+.fad-slider-round-2:before {
+  content: '\f182';
+}
+.fad-slider-round-3:before {
+  content: '\f183';
+}
+.fad-sliderhandle-1:before {
+  content: '\f184';
+}
+.fad-sliderhandle-2:before {
+  content: '\f185';
+}
+.fad-softclip:before {
+  content: '\f186';
+}
+.fad-softclipcurve:before {
+  content: '\f187';
+}
+.fad-solo:before {
+  content: '\f188';
+}
+.fad-speaker:before {
+  content: '\f189';
+}
+.fad-squareswitch-off:before {
+  content: '\f18a';
+}
+.fad-squareswitch-on:before {
+  content: '\f18b';
+}
+.fad-stereo:before {
+  content: '\f18c';
+}
+.fad-stop:before {
+  content: '\f18d';
+}
+.fad-thunderbolt:before {
+  content: '\f18e';
+}
+.fad-timeselect:before {
+  content: '\f18f';
+}
+.fad-undo:before {
+  content: '\f190';
+}
+.fad-unlock:before {
+  content: '\f191';
+}
+.fad-usb:before {
+  content: '\f192';
+}
+.fad-v-expand:before {
+  content: '\f193';
+}
+.fad-vroundswitch-off:before {
+  content: '\f194';
+}
+.fad-vroundswitch-on:before {
+  content: '\f195';
+}
+.fad-vsquareswitch-off:before {
+  content: '\f196';
+}
+.fad-vsquareswitch-on:before {
+  content: '\f197';
+}
+.fad-waveform:before {
+  content: '\f198';
+}
+.fad-xlrplug:before {
+  content: '\f199';
+}
+.fad-zoomin:before {
+  content: '\f19a';
+}
+.fad-zoomout:before {
+  content: '\f19b';
+}

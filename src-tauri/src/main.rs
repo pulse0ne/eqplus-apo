@@ -117,7 +117,7 @@ async fn get_state(state: tauri::State<'_, AppState>) -> Result<DeviceFilterMapp
 
 #[tauri::command]
 async fn modify_filter(device: String, filter: filters::FilterParams, state: tauri::State<'_, AppState>) -> Result<(), AppError> {
-    debug!("modifying filter {} for device {}", filter.id, device);
+    debug!("modifying filter {} for device {} -> freq: {:.3} | gain: {:.3} | q: {:.3}", filter.id, device, filter.frequency, filter.gain, filter.q);
     let mappings = &mut state.mapping.lock().unwrap();
     let device_mapping = mappings.get_mut(&device).ok_or(AppError{ err_type: ErrorType::BadArguments, message: format!("Could not find device with name {}", device) })?;
     let new_filters: Vec<filters::FilterParams> = device_mapping.eq.filters
@@ -257,6 +257,7 @@ fn show_main_page(state: AppState) {
     )
         .center()
         .title("eq+")
+        .min_inner_size(600f64, 400f64)
         .build()
         .expect("failed to build window")
         .show()

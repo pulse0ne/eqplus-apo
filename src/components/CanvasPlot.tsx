@@ -1,7 +1,7 @@
 import { darken, opacify, transparentize } from 'color2k';
 import { Component, Context, ContextType, createRef } from 'react';
 import styled, { DefaultTheme, ThemeContext } from 'styled-components';
-import { AUDIO_CONTEXT, NYQUIST, FREQ_START } from '../audio-constants';
+import { AUDIO_CONTEXT, NYQUIST, FREQ_START } from '../audioConstants';
 import { IFilter, FilterChanges } from '../types/filter';
 import { Theme } from '../types/theme';
 import clamp from '../utils/clamp';
@@ -10,8 +10,13 @@ const TWO_PI = 2.0 * Math.PI;
 const HANDLE_RADIUS = 4.5;
 const SELECTED_HANDLE_RADIUS = 1.25 * HANDLE_RADIUS;
 const HANDLE_CIRCUMFERENCE = 2 * HANDLE_RADIUS;
+const DB_MAX = 20.0;
+const DB_MIN = -30.0;
 const DB_SCALE = 20.0;
 const DPR = () => window.devicePixelRatio;
+
+const CONTROL_WIDTH = 120;
+const CONTROL_HEIGHT = 48;
 
 const FREQ_LINES = {
   '10': 10,
@@ -19,6 +24,16 @@ const FREQ_LINES = {
   '1k': 1000,
   '10k': 10000
 };
+
+const FloatingControls = styled.div`
+  position: absolute;
+  width: ${CONTROL_WIDTH}px;
+  height: ${CONTROL_HEIGHT}px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.75);
+  overflow: hidden;
+  z-index: 9999;
+`;
 
 type CanvasContainerProps = { $w: number, $h: number };
 
@@ -35,8 +50,6 @@ const CanvasWrapper = styled.canvas`
   position: absolute;
   top: 0;
   left: 0;
-  border-top-right-radius: 8px;
-  border-top-left-radius: 8px;
   background-color: ${props => props.id === 'graph' ? 'transparent' : props.theme.colors.graphBackground};
 `;
 
@@ -60,8 +73,8 @@ type CanvasPlotState = {
 };
 
 /**
- * This is a class component because hooks don't do well with complex mouse handlers; callback references change,
- * breaking things and complicating dependency mapping.
+ * This is a class component because I couldn't get hooks to work with complex mouse handlers; callback references change,
+ * breaking things and complicating dependency mapping. Maybe one day this will be refactored back?
  */
 export class CanvasPlot extends Component<CanvasPlotProps, CanvasPlotState> {
   static contextType: Context<DefaultTheme|undefined> = ThemeContext;
@@ -161,7 +174,7 @@ export class CanvasPlot extends Component<CanvasPlotProps, CanvasPlotState> {
   }
 
   handleMouseMove(e: React.MouseEvent) {
-    const { disabled, filters, activeNodeIndex, onFilterChanged, height } = this.props;
+    const { disabled, filters, activeNodeIndex, onFilterChanged, width } = this.props;
     if (disabled) return;
     const { offsetX, offsetY } = e.nativeEvent;
     if (!offsetX && !offsetY) return; // when mouse stops, these are 0
@@ -176,18 +189,19 @@ export class CanvasPlot extends Component<CanvasPlotProps, CanvasPlotState> {
     } else {
       if (activeNodeIndex !== null) {
         const active = filters[activeNodeIndex];
-        const m = this.graphRef.current!.width / Math.log10(NYQUIST / FREQ_START);
+        const m = width / Math.log10(NYQUIST / FREQ_START);
         const adjustedX = offsetX * DPR();
         let adjustedY = offsetY * DPR();
         if (active.getType() === 'lowshelf' || active.getType() === 'highshelf') {
-          const zeroY = height * 0.5;
+          const zeroY = this.getZeroY();
           const diffFromZero = offsetY - zeroY;
           const y = (diffFromZero * 2) + zeroY;
           adjustedY = y * DPR();
         }
         const frequency = Math.pow(10, adjustedX / m) * FREQ_START;
         if (active.usesGain()) {
-          const gain = clamp(DB_SCALE * (((-2 * adjustedY) / this.graphRef.current!.height) + 1), -1.0 * DB_SCALE, DB_SCALE);
+          const gain = clamp(20.0 * (((-(1/Math.abs(DB_MAX / (DB_MIN - DB_MAX))) * adjustedY) / this.props.height) + 1), DB_MIN, DB_MAX);
+          console.log(adjustedY, gain);
           onFilterChanged?.({ frequency, gain });
         } else {
           onFilterChanged?.({ frequency });
@@ -197,11 +211,13 @@ export class CanvasPlot extends Component<CanvasPlotProps, CanvasPlotState> {
   }
 
   handleMouseWheel(e: React.WheelEvent) {
-    const { disabled, wheelSensitivity = 2048, filters, activeNodeIndex, onFilterChanged } = this.props;
+    const { disabled, filters, activeNodeIndex, onFilterChanged } = this.props;
     if (disabled) return;
     const active = activeNodeIndex !== null ? filters[activeNodeIndex] : null;
     if (active && active.usesQ()) {
-      const q = Math.max(0.1, Math.min(active.getQ() - e.deltaY / (wheelSensitivity / 10), 10));
+      const dir = e.deltaY > 0 ? -1 : 1;
+      const curr = active.getQ();
+      const q = Math.max(0.01, Math.min(curr + (curr / 10 * dir), 10));
       onFilterChanged?.({ q });
     }
   }
@@ -215,6 +231,7 @@ export class CanvasPlot extends Component<CanvasPlotProps, CanvasPlotState> {
   }
 
   private drawGrid() {
+    console.log('drawing grid');
     const grid = this.gridRef.current;
     if (!grid) return;
     const gridCtx = grid.getContext('2d')!;
@@ -249,9 +266,11 @@ export class CanvasPlot extends Component<CanvasPlotProps, CanvasPlotState> {
       gridCtx.fillText(j[0], Math.floor(x) + 10.5, height - 2.5);
     });
 
+    const zeroY = this.getZeroY();
+
     // draw decibel lines
-    for (let db = -DB_SCALE + 5; db < DB_SCALE; db += 5) {
-      const dbToY = (0.5 * height) - ((0.5 * height) / DB_SCALE) * db;
+    for (let db = DB_MIN + 5; db < DB_MAX; db += 5) {
+      const dbToY = zeroY - (zeroY / DB_SCALE) * db;
       const y = Math.floor(dbToY) + 0.5; // adjustment for crisp lines
       gridCtx.strokeStyle = db === 0 ? colors.graphLineMarker : colors.graphLine;
       gridCtx.beginPath();
@@ -259,7 +278,7 @@ export class CanvasPlot extends Component<CanvasPlotProps, CanvasPlotState> {
       gridCtx.lineTo(width, y);
       gridCtx.stroke();
       gridCtx.fillStyle = colors.graphText;
-      gridCtx.fillText(db.toFixed(0), 10.5, y + 0.5);
+      gridCtx.fillText(db.toFixed(0), 10.5, y + 0.5 - 2);
     }
   }
 
@@ -288,6 +307,8 @@ export class CanvasPlot extends Component<CanvasPlotProps, CanvasPlotState> {
       freqHz[x] = Math.pow(10, (x / mVal)) * FREQ_START;
     }
 
+    const zeroY = this.getZeroY();
+
     if (this.props.drawCompositeResponse) {
       const magRes = filters.map((f, ix) => {
         const filterNode = this.filterNodes[ix];
@@ -307,7 +328,7 @@ export class CanvasPlot extends Component<CanvasPlotProps, CanvasPlotState> {
       for (let i = 0; i < width; ++i) {
         const response = magRes.reduce((a, c) => a * c[i], 1);
         const dbResponse = 20.0 * Math.log10(Math.abs(response) || 1);
-        const y = (0.5 * height) * (1 - dbResponse / DB_SCALE);
+        const y = zeroY * (1 - dbResponse / DB_SCALE);
         if (i === 0) {
           graphCtx.moveTo(i, y);
         } else {
@@ -334,32 +355,36 @@ export class CanvasPlot extends Component<CanvasPlotProps, CanvasPlotState> {
       graphCtx.lineWidth = 2;
       graphCtx.strokeStyle = transparentize(color, 0.2);
       graphCtx.fillStyle = transparentize(color, 0.3);
-      graphCtx.moveTo(0, 0.5 * height);
+      graphCtx.moveTo(0, zeroY);
 
       for (let i = 0; i < width; ++i) {
         const r = response[i];
         const dbResponse = 20.0 * Math.log10(Math.abs(r) || 1);
-        const y = (0.5 * height) * (1 - dbResponse / DB_SCALE);
+        const y = zeroY * (1 - dbResponse / DB_SCALE);
         graphCtx.lineTo(i, y);
       }
 
-      graphCtx.lineTo(width, 0.5 * height);
+      graphCtx.lineTo(width, zeroY);
       graphCtx.stroke();
       graphCtx.fill();
     });
   }
 
+  private getZeroY() {
+    return Math.abs(DB_MAX / (DB_MIN - DB_MAX)) * this.props.height;
+  }
+
   private drawHandles() {
     const graph = this.graphRef.current;
     if (!graph) return;
-    const { width, height } = this.props;
+    const { width } = this.props;
     const graphCtx = graph.getContext('2d')!;
     const mVal = width / Math.log10(NYQUIST / FREQ_START);
     const newHandleLocations: Record<string, Point2D> = {};
     const { filters, disabled, activeNodeIndex } = this.props;
     const theme = this.context!;
 
-    const zeroY = 0.5 * height;
+    const zeroY = this.getZeroY();
     filters.forEach((f, ix) => {
       const x = Math.floor(mVal * Math.log10(f.getFrequency() / FREQ_START));
       let y = zeroY;
@@ -407,10 +432,20 @@ export class CanvasPlot extends Component<CanvasPlotProps, CanvasPlotState> {
     this.drawHandles();
   }
 
+  private getFloatingControlsLocation(): Point2D|null {
+    const loc = this.props.activeNodeIndex !== null ? this.handleLocations[this.props.filters[this.props.activeNodeIndex].id] : null;
+    return loc ? { x: loc.x + HANDLE_RADIUS, y: loc.y + HANDLE_RADIUS } : loc;
+  }
+
   render() {
     const { width, height } = this.props;
+    const controlsLoc = this.getFloatingControlsLocation();
     return (
-      <CanvasContainer $w={width} $h={height} className="themed accentPrimary disabled graphBackground graphLine graphLineMarker graphNodeColor1 graphNodeColor2 graphNodeColor3 graphNodeColor4 graphText">
+      <CanvasContainer
+        $h={height}
+        $w={width}
+        className="themed accentPrimary disabled graphBackground graphLine graphLineMarker graphNodeColor1 graphNodeColor2 graphNodeColor3 graphNodeColor4 graphText"
+      >
         <CanvasWrapper
           id="grid"
           ref={this.gridRef}
@@ -428,6 +463,14 @@ export class CanvasPlot extends Component<CanvasPlotProps, CanvasPlotState> {
           onWheel={this.handleMouseWheel}
           onDoubleClick={this.handleDoubleClick}
         />
+        {controlsLoc && 
+          <FloatingControls
+            style={{
+              top: controlsLoc.y,
+              left: controlsLoc.x
+            }}
+          />
+        }
       </CanvasContainer>
     );
   }

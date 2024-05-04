@@ -55,16 +55,19 @@ pub struct DeviceInfo {
     pub guid: String,
     pub name: String,
     pub apo_installed: bool,
+    pub is_default: bool,
 }
 
 impl DeviceInfo {
     pub fn enumerate() -> Result<Vec<DeviceInfo>, AppError> {
         unsafe {
+            let default_device = DeviceInfo::get_default_device_guid()?;
+
             let device_collection = ENUMERATOR
                 .0
                 .EnumAudioEndpoints(Audio::eRender, Audio::DEVICE_STATE_ACTIVE)
                 .map_err(|_| {
-                    AppError{ err_type: ErrorType::GenericIoError, message: format!("Failed to enumerate audio endpoints") }
+                    AppError{ err_type: ErrorType::RegistryError, message: format!("Failed to enumerate audio endpoints") }
                 })?;
 
             let count = device_collection.GetCount().map_err(|_| {
@@ -105,9 +108,27 @@ impl DeviceInfo {
                     }
                 }
 
-                devices.push(DeviceInfo { guid: device_guid.to_lowercase(), name: device_name, apo_installed: installed });
+                devices.push(DeviceInfo { guid: device_guid.to_lowercase(), name: device_name, apo_installed: installed, is_default: device_guid == default_device });
             }
             return Ok(devices);
+        }
+    }
+
+    fn get_default_device_guid() -> Result<String, AppError> {
+        unsafe {
+            let default_device = ENUMERATOR
+                .0
+                .GetDefaultAudioEndpoint(Audio::eRender, Audio::eConsole)
+                .map_err(|_| {
+                    AppError{ err_type: ErrorType::RegistryError, message: format!("Failed to get default audio endpoint") }
+                })?;
+
+            let property_store = default_device
+                .OpenPropertyStore(STGM_READ)
+                .expect("could not open property store");
+
+            let device_guid = read_device_property(&property_store, &PKEY_AudioEndpoint_GUID as *const _ as *const _)?;
+            Ok(device_guid)
         }
     }
 }
@@ -166,3 +187,15 @@ fn read_device_property(store: &IPropertyStore, key: *const PROPERTYKEY) -> Resu
         Ok(value_string)
     }
 }
+
+// pub fn register_device_change_callback() {
+//     unsafe {
+//         ENUMERATOR.0.RegisterEndpointNotificationCallback(pclient)
+//     }
+// }
+
+// struct DeviceNotificationClient {}
+
+// impl DeviceNotificationClient {
+//     pub unsafe fn OnDefaultDeviceChanged(&)
+// }

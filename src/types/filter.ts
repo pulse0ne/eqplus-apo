@@ -1,4 +1,4 @@
-import { FREQ_START } from '../audio-constants';
+import { FREQ_START } from '../audioConstants';
 
 export type FilterParams = {
   id: string,

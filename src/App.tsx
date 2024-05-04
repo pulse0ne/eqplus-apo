@@ -1,4 +1,4 @@
-import { createRef, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { DefaultTheme, ThemeProvider } from 'styled-components';
 import GlobalStyles from './GlobalStyles';
 import { CanvasPlot, CanvasPlotProps } from './components/CanvasPlot';
@@ -9,10 +9,10 @@ import { DeviceFilterMapping } from './types/eqstate';
 import isDefined from './utils/isDefined';
 import throttle from './utils/throttle';
 import { DeviceInfo, deviceName } from './types/device';
-import { info } from './utils/log-bridge';
+import { info } from './utils/logBridge';
 import { HBox, VBox } from './components/FlexBox';
-import { Select, SelectOption } from './components/Select';
-import { GainSlider } from './components/GainSlider';
+import DrawerControls from './components/DrawerControls';
+import './assets/fonts.css';
 
 const THROTTLE_TIMEOUT = 100;
 
@@ -24,7 +24,7 @@ const sendThrottledModifyFilter: (filter: FilterParams) => void = throttle((filt
 
 function ResponsiveCanvasWrapper(props: Omit<CanvasPlotProps, 'width'|'height'|'disabled'>) {
   const [ size, setSize ] = useState<Dimension>({ w: 400, h: 400 });
-  const responsiveWrapper = createRef<HTMLDivElement>();
+  const responsiveWrapper = useRef<HTMLDivElement|null>(null);
 
   useEffect(() => {
     if (responsiveWrapper.current) {
@@ -32,6 +32,7 @@ function ResponsiveCanvasWrapper(props: Omit<CanvasPlotProps, 'width'|'height'|'
         if (entries.length) {
           const entry = entries[0];
           setSize(() => {
+            console.log('setting size');
             const rect = entry.contentRect;
             return { w: rect.width, h: rect.height };
           });
@@ -44,7 +45,7 @@ function ResponsiveCanvasWrapper(props: Omit<CanvasPlotProps, 'width'|'height'|'
     }
   }, [responsiveWrapper]);
   return (
-    <div ref={responsiveWrapper} style={{ height: '100%', width: '100%'}}>
+    <div ref={responsiveWrapper} style={{ height: '100%', width: '100%' }}>
       <CanvasPlot
         width={size.w}
         height={size.h}
@@ -60,9 +61,10 @@ invoke('query_devices')
     const devices = res as DeviceInfo[];
     devices.forEach(device => {
       info(`Name: ${device.name}`);
-      info(`GUID: ${device.guid}`);
-      info(`APO installed: ${device.apo_installed}`);
-      info(`Cleaned up name: ${deviceName(device)}`);
+      info(`  GUID: ${device.guid}`);
+      info(`  APO installed: ${device.apo_installed}`);
+      info(`  Is default: ${device.is_default}`)
+      info(`  Cleaned up name: ${deviceName(device)}`);
     });
   });
 
@@ -91,42 +93,54 @@ function App() {
     sendThrottledModifyFilter(filter);
   }, [filters, selected]);
 
+  const handleFilterAdded = useCallback((atFrequency: number) => {
+    const ids = filters.map(f => f.id);
+    const largestId = ids.reduce((acc, id) => {
+      const idNum = parseInt(id);
+      return isNaN(idNum) ? acc : Math.max(acc, idNum);
+    }, 1);
+    const filter: FilterParams = {
+      id: `${largestId + 1}`,
+      frequency: atFrequency,
+      gain: 0.0,
+      q: 1.0,
+      type: 'peaking'
+    };
+    setFilters([...filters, filter]);
+    invoke('add_filter', { device: 'all', filter });
+  }, [filters]);
+
   return (
     <ThemeProvider theme={theme}>
-      <VBox>
-        <ResponsiveCanvasWrapper
-          filters={filters.map(f => DisplayFilterNode.fromFilterParams(f))}
-          activeNodeIndex={selected}
-          onHandleSelected={setSelected}
-          onFilterChanged={handleFilterChanged}
-        />
-        <Select>
-          <SelectOption value="Test Option 1">
-            <HBox $justifyContent="space-between" $alignItems="center">
-              <span>Test Option 1</span>
-              <HBox $alignItems="center">
-                <span>APO Not Installed</span>
-                <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'red' }}></div>
-              </HBox>
-            </HBox>
-          </SelectOption>
-          <SelectOption value="Test Option 2">
-            <HBox $justifyContent="space-between" $alignItems="center">
-              <span>Test Option 2</span>
-              <HBox $alignItems="center">
-                <span>APO Installed</span>
-                <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'green' }}></div>
-              </HBox>
-            </HBox>
-          </SelectOption>
-        </Select>
-        <HBox style={{ marginLeft: '20px' }}>
-          <GainSlider />
-          <GainSlider />
-          <GainSlider />
-          <GainSlider />
-        </HBox>
-      </VBox>
+      <HBox style={{ height: '100%', width: '100%', overflow: 'hidden' }}>
+        <div style={{ flexGrow: 1, minWidth: 0 }}>
+          <ResponsiveCanvasWrapper
+            filters={filters.map(f => DisplayFilterNode.fromFilterParams(f))}
+            activeNodeIndex={selected}
+            onHandleSelected={setSelected}
+            onFilterChanged={handleFilterChanged}
+            onFilterAdded={handleFilterAdded}
+          />
+        </div>
+        <div style={{ position: 'relative' }}>
+          <VBox
+            $justifyContent="center"
+            $alignItems="center"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: -24,
+              width: 24,
+              height: 24,
+              background: 'black',
+              color: 'white'
+              }}
+            >
+              <i className="icon arrow_right" style={{ fontSize: 16 }} />
+            </VBox>
+          <DrawerControls />
+        </div>
+      </HBox>
       <GlobalStyles />
     </ThemeProvider>
   );
