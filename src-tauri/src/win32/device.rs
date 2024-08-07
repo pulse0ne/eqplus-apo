@@ -19,11 +19,11 @@ const EQUALIZERAPO_PRE_MIX_GUID: GUID = GUID::from_u128(0xeacd2258_fcac_4ff4_b36
 const EQUALIZERAPO_POST_MIX_GUID: GUID = GUID::from_u128(0xec1cc9ce_faed_4822_828a_82a81a6f018f);
 
 
-/// Wrapper because of that stupid decision to remove `Send` and `Sync` from raw pointers.
-#[derive(Clone)]
-struct IAudioClientWrapper(Audio::IAudioClient);
-unsafe impl Send for IAudioClientWrapper {}
-unsafe impl Sync for IAudioClientWrapper {}
+// /// Wrapper because of that stupid decision to remove `Send` and `Sync` from raw pointers.
+// #[derive(Clone)]
+// struct IAudioClientWrapper(Audio::IAudioClient);
+// unsafe impl Send for IAudioClientWrapper {}
+// unsafe impl Sync for IAudioClientWrapper {}
 
 static ENUMERATOR: Lazy<Enumerator> = Lazy::new(|| {
     // COM initialization is thread local, but we only need to have COM initialized in the

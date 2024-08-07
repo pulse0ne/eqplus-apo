@@ -22,16 +22,20 @@ type DialProps = {
   min: number,
   max: number,
   value: number,
+  disabled?: boolean,
   onChange?: (v: number) => void,
   step?: number,
   size?: number
 };
+
+// TODO: linear vs logarithmic stepping
 
 const Dial = memo(
   function Dial({
     min,
     max,
     value,
+    disabled,
     onChange = () => undefined,
     step = 1,
     size = defaultSize
@@ -78,6 +82,7 @@ const Dial = memo(
     }, []);
 
     const mouseDown = useEvent((e: MouseEvent) => {
+      if (disabled) return;
       e.preventDefault();
       listen();
     });
@@ -88,16 +93,19 @@ const Dial = memo(
     });
 
     const mouseMove = useEvent((e: MouseEvent) => {
+      if (disabled) return;
       e.preventDefault();
       updateValue(e.offsetX, e.offsetY);
     });
 
     const scroll = (e: React.WheelEvent) => {
+      if (disabled) return;
       const dir = e.deltaY > 0 ? -1 : 1;
       updateModelValue(value + (dir * (max - min) / 20)); // 5%
     };
 
     const keyDown = (e: React.KeyboardEvent<SVGSVGElement>) => {
+      if (disabled) return;
       switch (e.code) {
         case 'ArrowRight':
         case 'ArrowUp':
@@ -160,6 +168,7 @@ const Dial = memo(
       onChange(clamp(value, min, max));
     };
 
+    // TODO: disabled colors
     return (
       <div>
         <svg

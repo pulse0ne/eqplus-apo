@@ -9,10 +9,11 @@ import { DeviceFilterMapping } from './types/eqstate';
 import isDefined from './utils/isDefined';
 import throttle from './utils/throttle';
 import { DeviceInfo, deviceName } from './types/device';
-import { info } from './utils/logBridge';
-import { HBox, VBox } from './components/FlexBox';
+import { debug, info } from './utils/logBridge';
+import { HBox } from './components/FlexBox';
 import DrawerControls from './components/DrawerControls';
 import './assets/fonts.css';
+import { SideControlsToggle } from './components/SideControlsToggle';
 
 const THROTTLE_TIMEOUT = 100;
 
@@ -72,12 +73,13 @@ function App() {
   const [ theme ] = useState<DefaultTheme>(DEFAULT_THEMES[0]);
   const [ filters, setFilters ] = useState<FilterParams[]>([]);
   const [ selected, setSelected ] = useState<number|null>(null);
+  const [ sideControlsOpen, setSideControlsOpen ] = useState(false);
 
   useEffect(() => {
     invoke('get_state')
       .then(res => {
         const state = res as DeviceFilterMapping;
-        console.log(state);
+        debug(JSON.stringify(state, null, 2));
         setFilters(state['all']?.eq?.filters ?? []);
       });
   }, []);
@@ -123,22 +125,11 @@ function App() {
           />
         </div>
         <div style={{ position: 'relative' }}>
-          <VBox
-            $justifyContent="center"
-            $alignItems="center"
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: -24,
-              width: 24,
-              height: 24,
-              background: 'black',
-              color: 'white'
-              }}
-            >
-              <i className="icon arrow_right" style={{ fontSize: 16 }} />
-            </VBox>
-          <DrawerControls />
+          <SideControlsToggle open={sideControlsOpen} onClick={() => setSideControlsOpen(v => !v)} />
+          <DrawerControls
+            open={sideControlsOpen}
+            filter={isDefined(selected) ? filters[selected] : undefined}
+          />
         </div>
       </HBox>
       <GlobalStyles />

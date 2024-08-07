@@ -50,10 +50,13 @@ const CanvasWrapper = styled.canvas`
   position: absolute;
   top: 0;
   left: 0;
-  background-color: ${props => props.id === 'graph' ? 'transparent' : props.theme.colors.graphBackground};
+  cursor: none;
+  background-color: ${props => props.id === 'grid' ? props.theme.colors.graphBackground : 'transparent'};
 `;
 
 type Point2D = { x: number, y: number };
+
+type HandleProperties = { location: Point2D, hovered: boolean }
 
 export type CanvasPlotProps = {
   width: number,
@@ -93,9 +96,11 @@ export class CanvasPlot extends Component<CanvasPlotProps, CanvasPlotState> {
 
   gridRef = createRef<HTMLCanvasElement>();
   graphRef = createRef<HTMLCanvasElement>();
+  displayRef = createRef<HTMLCanvasElement>();
 
   filterNodes: BiquadFilterNode[] = [];
-  handleLocations: Record<string, Point2D> = {};
+  // handleLocations: Record<string, Point2D> = {};
+  handles: Record<string, HandleProperties> = {};
 
   constructor(props: CanvasPlotProps) {
     super(props);
@@ -104,9 +109,12 @@ export class CanvasPlot extends Component<CanvasPlotProps, CanvasPlotState> {
     this.handleMouseMove = this.handleMouseMove.bind(this);
     this.handleMouseWheel = this.handleMouseWheel.bind(this);
     this.handleDoubleClick = this.handleDoubleClick.bind(this);
+    this.handleMouseLeave = this.handleMouseLeave.bind(this);
     this.draw = this.draw.bind(this);
     this.drawFrLine = this.drawFrLine.bind(this);
     this.drawGrid = this.drawGrid.bind(this);
+    this.drawDisplayLayer = this.drawDisplayLayer.bind(this);
+    this.drawHandles = this.drawHandles.bind(this);
   }
 
   componentDidMount() {
@@ -147,8 +155,8 @@ export class CanvasPlot extends Component<CanvasPlotProps, CanvasPlotState> {
     if (this.props.disabled) return;
     const { onHandleSelected } = this.props;
     const { offsetX, offsetY } = e.nativeEvent;
-    const node = Object.entries(this.handleLocations).find(p => {
-      const { x, y } = p[1];
+    const node = Object.entries(this.handles).find(p => {
+      const { x, y } = p[1].location;
       const [ xHit, yHit ] = [ x + HANDLE_RADIUS, y + HANDLE_RADIUS ];
       const [ diffX, diffY ] = [ xHit - offsetX, yHit - offsetY ];
       return diffX > 0 && diffY > 0 && diffX < HANDLE_CIRCUMFERENCE && diffY < HANDLE_CIRCUMFERENCE;
@@ -157,10 +165,10 @@ export class CanvasPlot extends Component<CanvasPlotProps, CanvasPlotState> {
     if (node) {
       const nodeIndex = this.props.filters.findIndex(i => i.id === node[0]);
       onHandleSelected?.(nodeIndex);
-      const graph = this.graphRef.current;
-      if (graph) {
-        graph.style.cursor = 'grabbing';
-      }
+      // const graph = this.graphRef.current;
+      // if (graph) {
+      //   // graph.style.cursor = 'grabbing';
+      // }
       this.setState(prevState => ({ ...prevState, dragging: true }));
     }
   }
@@ -177,15 +185,30 @@ export class CanvasPlot extends Component<CanvasPlotProps, CanvasPlotState> {
     const { disabled, filters, activeNodeIndex, onFilterChanged, width } = this.props;
     if (disabled) return;
     const { offsetX, offsetY } = e.nativeEvent;
-    if (!offsetX && !offsetY) return; // when mouse stops, these are 0
+    if (!offsetX && !offsetY) { // when mouse stops, these are 0
+      window.requestAnimationFrame(() => this.drawDisplayLayer(-1, -1));
+      return;
+    }
+    window.requestAnimationFrame(() => this.drawDisplayLayer(offsetX, offsetY));
+
     if (!this.state.dragging) {
-      const hit = Object.values(this.handleLocations).some(p => {
-        const { x, y } = p;
+      let redrawHandles = false;
+      Object.values(this.handles).forEach(handle => {
+        const { x, y } = handle.location;
         const [ xHit, yHit ] = [ x + HANDLE_RADIUS, y + HANDLE_RADIUS ];
         const [ diffX, diffY ] = [ xHit - offsetX, yHit - offsetY ];
-        return diffX > 0 && diffY > 0 && diffX < HANDLE_CIRCUMFERENCE && diffY < HANDLE_CIRCUMFERENCE;
+        const hit = diffX > 0 && diffY > 0 && diffX < HANDLE_CIRCUMFERENCE && diffY < HANDLE_CIRCUMFERENCE;
+        if (handle.hovered !== hit) {
+          handle.hovered = hit;
+          redrawHandles = true;
+        }
       });
-      this.graphRef.current!.style.cursor = hit ? 'grab' : '';
+
+      if (redrawHandles) {
+        console.log('redrawing handles');
+        window.requestAnimationFrame(this.draw);
+      }
+      // this.graphRef.current!.style.cursor = hit ? 'grab' : 'none';
     } else {
       if (activeNodeIndex !== null) {
         const active = filters[activeNodeIndex];
@@ -282,7 +305,46 @@ export class CanvasPlot extends Component<CanvasPlotProps, CanvasPlotState> {
     }
   }
 
+  handleMouseLeave() {
+    console.log('here');
+    window.requestAnimationFrame(() => this.drawDisplayLayer(-1, -1));
+  }
+
+  private drawDisplayLayer(x: number, y: number) {
+    const display = this.displayRef.current;
+    if (!display) return;
+    const { width, height } = this.props;
+    const ctx = display.getContext('2d')!;
+
+    ctx.clearRect(0, 0, width, height);
+
+    if (x > -1 && y > -1) {
+      const m = width / Math.log10(NYQUIST / FREQ_START);
+      const adjustedX = x * DPR();
+      const adjustedY = y * DPR();
+      const frequency = Math.pow(10, adjustedX / m) * FREQ_START;
+
+      const color = 'rgba(255, 255, 255, 0.5)';
+      ctx.font = '9px sans-serif';
+      ctx.fillStyle = color;
+      ctx.fillText(`${frequency.toFixed(2)}Hz`, 5.5, height - 5.5);
+
+      ctx.fillStyle = 'transparent';
+      ctx.strokeStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(adjustedX + 0.5, 0);
+      ctx.lineTo(adjustedX + 0.5, height);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(0, adjustedY + 0.5);
+      ctx.lineTo(width, adjustedY + 0.5);
+      ctx.stroke();
+    }
+  }
+
   private drawAll() {
+    console.log('drawing all');
     this.syncBiquads(this.props.filters);
     window.requestAnimationFrame(this.drawGrid);
     window.requestAnimationFrame(this.draw);
@@ -375,12 +437,13 @@ export class CanvasPlot extends Component<CanvasPlotProps, CanvasPlotState> {
   }
 
   private drawHandles() {
+    console.log('drawing handles');
     const graph = this.graphRef.current;
     if (!graph) return;
     const { width } = this.props;
     const graphCtx = graph.getContext('2d')!;
     const mVal = width / Math.log10(NYQUIST / FREQ_START);
-    const newHandleLocations: Record<string, Point2D> = {};
+    const newHandleLocations: Record<string, HandleProperties> = {};
     const { filters, disabled, activeNodeIndex } = this.props;
     const theme = this.context!;
 
@@ -420,9 +483,9 @@ export class CanvasPlot extends Component<CanvasPlotProps, CanvasPlotState> {
         graphCtx.fillStyle = disabled ? theme.colors.disabled : color;
       }
 
-      newHandleLocations[f.id] = { x, y };
+      newHandleLocations[f.id] = { location: { x, y }, hovered: false };
     });
-    this.handleLocations = newHandleLocations;
+    this.handles = newHandleLocations;
   }
 
   private draw() {
@@ -433,8 +496,8 @@ export class CanvasPlot extends Component<CanvasPlotProps, CanvasPlotState> {
   }
 
   private getFloatingControlsLocation(): Point2D|null {
-    const loc = this.props.activeNodeIndex !== null ? this.handleLocations[this.props.filters[this.props.activeNodeIndex].id] : null;
-    return loc ? { x: loc.x + HANDLE_RADIUS, y: loc.y + HANDLE_RADIUS } : loc;
+    const handle = this.props.activeNodeIndex !== null ? this.handles[this.props.filters[this.props.activeNodeIndex].id] : null;
+    return handle ? { x: handle.location.x + HANDLE_RADIUS, y: handle.location.y + HANDLE_RADIUS } : null;
   }
 
   render() {
@@ -453,6 +516,12 @@ export class CanvasPlot extends Component<CanvasPlotProps, CanvasPlotState> {
           height={`${DPR() * height}px`}
         />
         <CanvasWrapper
+          id="display"
+          ref={this.displayRef}
+          width={`${DPR() * width}px`}
+          height={`${DPR() * height}px`}
+        />
+        <CanvasWrapper
           id="graph"
           ref={this.graphRef}
           width={`${DPR() * width}px`}
@@ -460,16 +529,17 @@ export class CanvasPlot extends Component<CanvasPlotProps, CanvasPlotState> {
           onMouseDown={this.handleMouseDown}
           onMouseUp={this.handleMouseUp}
           onMouseMove={this.handleMouseMove}
+          onMouseLeave={this.handleMouseLeave}
           onWheel={this.handleMouseWheel}
           onDoubleClick={this.handleDoubleClick}
         />
-        {controlsLoc && 
+        {/*controlsLoc && 
           <FloatingControls
             style={{
               top: controlsLoc.y,
               left: controlsLoc.x
             }}
-          />
+          />*/
         }
       </CanvasContainer>
     );

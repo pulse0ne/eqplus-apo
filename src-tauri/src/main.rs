@@ -12,8 +12,7 @@ use errors::{AppError, ErrorType};
 use filters::{FilterBank, DeviceFilterMapping};
 use std::{path::Path, fs::{self}, sync::Mutex};
 use tauri::generate_handler;
-use simple_logger::SimpleLogger;
-use log::{LevelFilter, info, warn, debug};
+use log::{info, warn, debug};
 #[cfg(windows)]
 use win32::device::DeviceInfo;
 #[cfg(windows)]
@@ -266,7 +265,7 @@ fn show_main_page(state: AppState) {
 }
 
 fn main() {
-    SimpleLogger::new().with_level(LevelFilter::Debug).init().unwrap();
+    env_logger::init();
 
     let state = AppState::default();
 
